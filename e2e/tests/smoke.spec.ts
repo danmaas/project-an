@@ -66,6 +66,39 @@ test('lists files via /api/data', async ({ request }) => {
   })
 })
 
+test('renders the retention & monetization metrics table', async ({ page }) => {
+  await page.goto('/')
+  const table = page.getByTestId('metrics-table')
+  await expect(table).toBeVisible({ timeout: 30_000 })
+
+  // All four metrics rows are present.
+  await expect(table).toContainText('n (players)')
+  await expect(table).toContainText('returned_1d')
+  await expect(table).toContainText('returned_2d')
+  await expect(table).toContainText('returned_3d')
+  await expect(table).toContainText('sub_buy_success')
+
+  // n (players) is reported as a real number (digits, optional thousands commas).
+  const nCell = table.locator('tr.row-n td')
+  await expect(nCell).toHaveText(/^\d{1,3}(,\d{3})*$/)
+
+  // Each retention row shows a percentage and an absolute count.
+  await expect(table).toContainText(/%/)
+})
+
+test('metrics table breaks out by group when group-by is active', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByTestId('metrics-table')).toBeVisible({ timeout: 30_000 })
+
+  await page.getByTestId('group-by').selectOption('platform')
+
+  const table = page.getByTestId('metrics-table')
+  // platform values per AGENTS.md: ios, android, web — at least 2 are present in the ca file.
+  const headers = table.locator('thead th')
+  // Subtract 1 for the empty row-label column header.
+  await expect.poll(async () => (await headers.count()) - 1).toBeGreaterThanOrEqual(2)
+})
+
 test('exposes a /healthz endpoint that returns 200 OK', async ({ request }) => {
   const response = await request.get('/healthz')
   expect(response.status()).toBe(200)

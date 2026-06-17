@@ -2,8 +2,10 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { fetchEvents, fetchFileList } from './data/parquet'
 import { applyFilters, screenEventsByHour, uniqueJoinWeeks } from './data/aggregate'
+import { computeRetentionMetrics } from './data/metrics'
 import { EMPTY_FILTERS, type Filters, type GroupBy, type PlayerEvent } from './types'
 import FilterPanel from './components/FilterPanel.vue'
+import MetricsTable from './components/MetricsTable.vue'
 import TimeSeriesChart from './components/TimeSeriesChart.vue'
 
 const title = 'Player Insights'
@@ -22,6 +24,12 @@ const availableJoinWeeks = computed(() => uniqueJoinWeeks(events.value))
 const filteredEvents = computed(() => applyFilters(events.value, filters.value))
 const screenBuckets = computed(() => screenEventsByHour(filteredEvents.value, groupBy.value))
 const totalEvents = computed(() => screenBuckets.value.reduce((sum, b) => sum + b.count, 0))
+// Retention metrics are computed over the unfiltered events, applying the
+// filter at the player level inside computeRetentionMetrics. This is more
+// efficient than re-filtering events for every metric.
+const retentionMetrics = computed(() =>
+  computeRetentionMetrics(events.value, filters.value, groupBy.value),
+)
 
 function formatFilename(name: string): string {
   return name.replace(/\.parquet$/i, '')
@@ -98,6 +106,7 @@ watch(selectedFile, async (filename) => {
           {{ totalEvents.toLocaleString() }} screen events,
           {{ screenBuckets.length }} hourly buckets.
         </p>
+        <MetricsTable :metrics="retentionMetrics" />
       </template>
     </section>
   </article>

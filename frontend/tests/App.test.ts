@@ -18,10 +18,12 @@ function ev(
   countryAgg = 'ENG',
   platform = 'ios',
   joinWeek = '2026-04-27',
+  userIdHash = 'u-default',
 ): PlayerEvent {
   return {
     ts: new Date(iso),
     event,
+    userIdHash,
     countryAgg,
     platform,
     joinWeek: new Date(`${joinWeek}T00:00:00Z`),
@@ -29,10 +31,12 @@ function ev(
 }
 
 const sampleEvents: PlayerEvent[] = [
-  ev('2026-05-01T10:00:00Z', 'screen', 'ENG', 'ios', '2026-04-27'),
-  ev('2026-05-01T10:05:00Z', 'screen', 'ENG', 'android', '2026-04-27'),
-  ev('2026-05-01T11:00:00Z', 'screen', 'jp', 'ios', '2026-05-04'),
-  ev('2026-05-01T11:00:00Z', 'problem_set_started', 'ENG', 'ios', '2026-04-27'),
+  ev('2026-05-01T10:00:00Z', 'screen', 'ENG', 'ios', '2026-04-27', 'p1'),
+  ev('2026-05-01T10:05:00Z', 'screen', 'ENG', 'android', '2026-04-27', 'p2'),
+  ev('2026-05-01T11:00:00Z', 'screen', 'jp', 'ios', '2026-05-04', 'p3'),
+  ev('2026-05-01T11:00:00Z', 'problem_set_started', 'ENG', 'ios', '2026-04-27', 'p1'),
+  ev('2026-05-02T10:00:00Z', 'returned_1d', 'ENG', 'ios', '2026-04-27', 'p1'),
+  ev('2026-05-02T10:00:00Z', 'sub_buy_success', 'jp', 'ios', '2026-05-04', 'p3'),
 ]
 
 beforeEach(() => {
@@ -159,6 +163,41 @@ describe('App', () => {
 
     expect(wrapper.text()).toContain('Failed to load data')
     expect(wrapper.text()).toContain('boom')
+  })
+
+  it('renders the retention metrics table with per-player counts and rates', async () => {
+    fetchFileListMock.mockResolvedValue(['events-a.parquet'])
+    fetchEventsMock.mockResolvedValue(sampleEvents)
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    const table = wrapper.get('[data-testid="metrics-table"]')
+    expect(table.text()).toContain('n (players)')
+    expect(table.text()).toContain('returned_1d')
+    expect(table.text()).toContain('returned_2d')
+    expect(table.text()).toContain('returned_3d')
+    expect(table.text()).toContain('sub_buy_success')
+
+    // sampleEvents has 3 distinct players (p1, p2, p3); p1 has returned_1d
+    // (33.3%), p3 has sub_buy_success (33.3%).
+    expect(table.text()).toContain('3') // n (players)
+    expect(table.text()).toContain('33.3%')
+  })
+
+  it('breaks the metrics table out by group when group-by is set', async () => {
+    fetchFileListMock.mockResolvedValue(['events-a.parquet'])
+    fetchEventsMock.mockResolvedValue(sampleEvents)
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    await wrapper.get('[data-testid="group-by"]').setValue('countryAgg')
+    await flushPromises()
+
+    const table = wrapper.get('[data-testid="metrics-table"]')
+    // sample has 2 ENG players (p1, p2) and 1 jp player (p3).
+    expect(table.findAll('thead th').map((th) => th.text())).toEqual(['', 'ENG', 'jp'])
   })
 
   it('shows an error when the data directory contains no parquet files', async () => {

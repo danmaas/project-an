@@ -4,6 +4,8 @@
 export interface PlayerEvent {
   ts: Date
   event: string
+  /** Stable player identifier — the `user_id_hash` column in the Parquet. */
+  userIdHash: string
   /**
    * Aggregated country class (see `data/country.ts`) — e.g. `ENG`, `kr`, `EUR`,
    * `Other`. Deliberately NOT named `country` so it can't be confused with the
@@ -30,6 +32,28 @@ export interface Filters {
 export type GroupBy = null | 'countryAgg' | 'platform' | 'joinWeek'
 
 export const PLATFORMS: readonly string[] = ['ios', 'android', 'web']
+
+/**
+ * Event names whose accomplishment-rate (per-player) we report in the metrics
+ * table. Listed in the order they appear in the UI.
+ */
+export const RETENTION_EVENTS = [
+  'returned_1d',
+  'returned_2d',
+  'returned_3d',
+  'sub_buy_success',
+] as const
+
+export type RetentionEvent = (typeof RETENTION_EVENTS)[number]
+
+export interface RetentionMetrics {
+  /** Group label when `groupBy` is active; `undefined` for the aggregate row. */
+  group?: string
+  /** Distinct players in this group who pass the filter. */
+  totalPlayers: number
+  /** Count of players who accomplished each retention event at least once. */
+  counts: Record<RetentionEvent, number>
+}
 
 export const EMPTY_FILTERS: Filters = {
   countryAgg: null,

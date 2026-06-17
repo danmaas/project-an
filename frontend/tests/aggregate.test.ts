@@ -17,6 +17,7 @@ const e = (
 ): PlayerEvent => ({
   ts: new Date(iso),
   event,
+  userIdHash: 'u0',
   countryAgg,
   platform,
   joinWeek: new Date(`${joinWeek}T00:00:00Z`),
