@@ -21,11 +21,11 @@ The input data consists of a single large table of "events" where each row repre
 - `ts`: UTC timestamp of the event
 - `user_id_hash`: string that uniquely identifies an individual player
 - `country`: 2-letter ISO code for the player's country.
-  - The dataset includes players from many countries. To simplify the analysis UI, instead of displaying raw `country` values, classify `country` as follows:
-    - `us`,`ca`,`gb`,`ie`,`au`,`nz`: classify as `ENG` for "English-speaking" countries.
-    - `kr`,`tw`,`jp`: retain these literal values for Korea, Taiwan, and Japan, respectively.
-    - `fr`,`de`,`za`,`tr`,`nl`,`it`,`pl`,`ua`,`se`,`es`,`ro`,`fi`,`ch`,`cz`,`be`,`at`,`pt`,`hu`: classify as `EUR` for European countries.
-    - all other values: classify as `Other`.
+  - The dataset may include players from dozens of countries. To simplify the analysis UI, instead of working with raw `country` values, classify `country` as follows:
+    - `us`,`ca`,`gb`,`ie`,`au`,`nz`: classify collectively as `ENG` for "English-speaking" countries.
+    - `kr`,`tw`,`jp`: retain these literal values for Korea, Taiwan, and Japan, respectively. (these are main markets for the game).
+    - `fr`,`de`,`za`,`tr`,`nl`,`it`,`pl`,`ua`,`se`,`es`,`ro`,`fi`,`ch`,`cz`,`be`,`at`,`pt`,`hu`: classify collectively as `EUR` for key European countries.
+    - all other values: classify collectively as `Other`.
 - `platform`: `ios`, `android`, or `web`
 - `join_week`: UTC timestamp of the player account, quantized to the nearest week. This is useful for analyzing the behavior of successive cohorts of players, to look for seasonal effects.
 - `event`: Names the event that took place. See below for important event codes.

@@ -12,7 +12,7 @@ This file tracks the state of tasks that are TODO / INPROGRESS / DONE. Please ke
 
 - TASK-200 [DONE]: The app offers a choice of event logs to load (i.e. files in the `data/` directory).
 
-- TASK-300 [TODO]: The app exposes filtering options to selectively show `"screen"` event counts only for players from a specific `country` class, `platform`, or `join_week`. There is also a "group by" option to display event counts broken down by any of those dimensions. (For `country`, please use the classification scheme described in AGENTS.md).
+- TASK-300 [DONE]: The app exposes filtering options to selectively show `"screen"` event counts only for players from a specific `country` class, `platform`, or `join_week`. There is also a "group by" option to display total event counts, broken down by any of those dimensions, on the same chart. (**Note**: For `country`, please use the classification scheme described in `AGENTS.md`. Encode that classification scheme cleanly in code so that we can modify it easily in the future, if necessary).
 
 - TASK-400 [TODO]: In addition to the time-series chart, the app also displays the absolute number and percentage of players, among all players who pass the filter, who accomplished the `returned_1d`, `returned_2d`, and `returned_3d` events (i.e. 1/2/3-day retention rates), and also who accomplished the `sub_buy_success` event (i.e. conversion to paying player). All these events should be treated as independent, and rates reported independently; i.e., a player may accomplish `sub_buy_success` whether or not they also accomplished `returned_1d`.
 

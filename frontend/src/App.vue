@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { fetchEvents, fetchFileList } from './data/parquet'
-import { screenEventsByHour } from './data/aggregate'
-import type { HourlyBucket, PlayerEvent } from './types'
+import { applyFilters, screenEventsByHour, uniqueJoinWeeks } from './data/aggregate'
+import { EMPTY_FILTERS, type Filters, type GroupBy, type PlayerEvent } from './types'
+import FilterPanel from './components/FilterPanel.vue'
 import TimeSeriesChart from './components/TimeSeriesChart.vue'
 
 const title = 'Player Insights'
@@ -14,7 +15,12 @@ const events = ref<PlayerEvent[]>([])
 const status = ref<'loading' | 'ready' | 'error'>('loading')
 const errorMessage = ref('')
 
-const screenBuckets = computed<HourlyBucket[]>(() => screenEventsByHour(events.value))
+const filters = ref<Filters>({ ...EMPTY_FILTERS })
+const groupBy = ref<GroupBy>(null)
+
+const availableJoinWeeks = computed(() => uniqueJoinWeeks(events.value))
+const filteredEvents = computed(() => applyFilters(events.value, filters.value))
+const screenBuckets = computed(() => screenEventsByHour(filteredEvents.value, groupBy.value))
 const totalEvents = computed(() => screenBuckets.value.reduce((sum, b) => sum + b.count, 0))
 
 function formatFilename(name: string): string {
@@ -40,6 +46,9 @@ watch(selectedFile, async (filename) => {
   if (!filename) return
   status.value = 'loading'
   errorMessage.value = ''
+  // Reset filter/group-by when switching files; available join-weeks change.
+  filters.value = { ...EMPTY_FILTERS }
+  groupBy.value = null
   try {
     events.value = await fetchEvents(filename)
     status.value = 'ready'
@@ -68,6 +77,16 @@ watch(selectedFile, async (filename) => {
         </label>
       </div>
     </header>
+
+    <FilterPanel
+      v-if="status === 'ready'"
+      :filters="filters"
+      :group-by="groupBy"
+      :available-join-weeks="availableJoinWeeks"
+      @update:filters="filters = $event"
+      @update:group-by="groupBy = $event"
+    />
+
     <section class="chart-wrap" aria-live="polite">
       <p v-if="status === 'loading'" class="status">Loading event log…</p>
       <p v-else-if="status === 'error'" class="status status-error">

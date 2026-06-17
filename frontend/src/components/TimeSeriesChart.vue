@@ -13,18 +13,17 @@ const container = ref<HTMLDivElement>()
 function render(): void {
   if (!container.value) return
   container.value.replaceChildren()
+
+  const hasGroups = props.data.some((d) => d.group !== undefined)
+  const lineOptions: Plot.LineYOptions = hasGroups
+    ? { x: 'hour', y: 'count', stroke: 'group', strokeWidth: 1 }
+    : { x: 'hour', y: 'count', stroke: '#111111', strokeWidth: 1 }
+
   const chart = Plot.plot({
-    marks: [
-      Plot.ruleY([0], { stroke: '#cccccc' }),
-      Plot.lineY(props.data, {
-        x: 'hour',
-        y: 'count',
-        stroke: '#111111',
-        strokeWidth: 1,
-      }),
-    ],
+    marks: [Plot.ruleY([0], { stroke: '#cccccc' }), Plot.lineY(props.data, lineOptions)],
     x: { type: 'time', label: null, ticks: 6 },
     y: { label: props.yLabel ?? null, grid: true, nice: true, tickFormat: '~s' },
+    color: hasGroups ? { legend: true, label: null } : undefined,
     style: {
       background: 'transparent',
       color: '#111111',

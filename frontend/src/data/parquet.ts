@@ -1,5 +1,6 @@
 import { asyncBufferFromUrl, parquetReadObjects } from 'hyparquet'
 import type { PlayerEvent } from '../types'
+import { classifyCountry } from './country'
 
 /** List the available event-log Parquet files in the backend's data directory. */
 export async function fetchFileList(): Promise<string[]> {
@@ -17,11 +18,14 @@ export async function fetchEvents(filename: string): Promise<PlayerEvent[]> {
   const file = await asyncBufferFromUrl({ url })
   const rows = (await parquetReadObjects({
     file,
-    columns: ['ts', 'event'],
+    columns: ['ts', 'event', 'country', 'platform', 'join_week'],
   })) as Array<Record<string, unknown>>
   return rows.map((r) => ({
     ts: toDate(r.ts),
     event: String(r.event),
+    countryAgg: classifyCountry(r.country == null ? null : String(r.country)),
+    platform: String(r.platform ?? ''),
+    joinWeek: toDate(r.join_week),
   }))
 }
 
