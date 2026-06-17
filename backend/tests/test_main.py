@@ -30,6 +30,34 @@ def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
+def test_list_data_files_returns_parquet_files_alphabetically(data_dir: Path) -> None:
+    (data_dir / "events-b.parquet").write_bytes(b"PAR1")
+    (data_dir / "events-a.parquet").write_bytes(b"PAR1")
+    (data_dir / "notes.txt").write_text("ignored")
+    (data_dir / ".hidden.parquet").write_bytes(b"PAR1")
+    (data_dir / "subdir").mkdir()
+
+    response = client.get("/api/data")
+
+    assert response.status_code == 200
+    assert response.json() == {"files": ["events-a.parquet", "events-b.parquet"]}
+
+
+def test_list_data_files_returns_empty_list_for_empty_dir(data_dir: Path) -> None:
+    response = client.get("/api/data")
+    assert response.status_code == 200
+    assert response.json() == {"files": []}
+
+
+def test_list_data_files_returns_empty_list_when_dir_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(main, "DATA_DIR", tmp_path / "does-not-exist")
+    response = client.get("/api/data")
+    assert response.status_code == 200
+    assert response.json() == {"files": []}
+
+
 def test_get_data_file_serves_parquet_bytes(data_dir: Path) -> None:
     payload = b"PAR1\x00\x01\x02fake-parquet-bytesPAR1"
     (data_dir / "events.parquet").write_bytes(payload)

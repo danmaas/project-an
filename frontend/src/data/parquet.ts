@@ -1,6 +1,16 @@
 import { asyncBufferFromUrl, parquetReadObjects } from 'hyparquet'
 import type { PlayerEvent } from '../types'
 
+/** List the available event-log Parquet files in the backend's data directory. */
+export async function fetchFileList(): Promise<string[]> {
+  const response = await fetch('/api/data')
+  if (!response.ok) {
+    throw new Error(`Failed to list event logs: HTTP ${response.status}`)
+  }
+  const body = (await response.json()) as { files?: string[] }
+  return body.files ?? []
+}
+
 /** Fetch a Parquet file from the backend and decode just the columns we need. */
 export async function fetchEvents(filename: string): Promise<PlayerEvent[]> {
   const url = `/api/data/${filename}`

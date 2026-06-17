@@ -19,6 +19,19 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/data")
+def list_data_files() -> dict[str, list[str]]:
+    data_dir = DATA_DIR.resolve()
+    if not data_dir.is_dir():
+        return {"files": []}
+    files = sorted(
+        p.name
+        for p in data_dir.iterdir()
+        if p.is_file() and p.suffix == ".parquet" and not p.name.startswith(".")
+    )
+    return {"files": files}
+
+
 @app.api_route("/api/data/{filename}", methods=["GET", "HEAD"])
 def get_data_file(filename: str) -> FileResponse:
     # Defense against path traversal: require a plain `.parquet` filename and

@@ -55,6 +55,8 @@ This is not a complete list. Other events may be present in the data.
 - In TypeScript files, prefer `// ...` style comments. Only use `/* ...  */` for large multi-line block comments. Use `/** ... */` for JSDoc compliant comments where appropriate.
 - Use `ruff` for Python lint + format; `eslint` + `prettier` for TypeScript.
 - Keep `TODO.md` updated to reflect the current state of the project tasks.
+  - When you finish implementing a task (tests green + verified working), the **final action** before reporting back to the user is to mark that task `[DONE]` in `TODO.md`. Re-read the file afterwards to confirm the change actually landed — don't trust the prior `Edit` blindly, since the file may have been concurrently modified by the user or a linter.
+  - If you start a non-trivial task, mark it `[INPROGRESS]` first so the state is visible.
 
 ## Testing
 

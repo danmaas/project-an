@@ -17,6 +17,23 @@ test('renders the time-series chart for screen events', async ({ page }) => {
   await expect(caption).toContainText(/\d+ hourly buckets/)
 })
 
+test('lists available event logs in the source dropdown', async ({ page }) => {
+  await page.goto('/')
+  const select = page.getByTestId('source-select')
+  await expect(select).toBeVisible()
+  await expect(select.locator('option')).toHaveCount(2)
+  await expect(select).toContainText('events-202605-ca')
+  await expect(select).toContainText('events-202605-full')
+})
+
+test('lists files via /api/data', async ({ request }) => {
+  const response = await request.get('/api/data')
+  expect(response.status()).toBe(200)
+  expect(await response.json()).toEqual({
+    files: ['events-202605-ca.parquet', 'events-202605-full.parquet'],
+  })
+})
+
 test('exposes a /healthz endpoint that returns 200 OK', async ({ request }) => {
   const response = await request.get('/healthz')
   expect(response.status()).toBe(200)

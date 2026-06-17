@@ -10,11 +10,11 @@ This file tracks the state of tasks that are TODO / INPROGRESS / DONE. Please ke
 
 - TASK-100 [DONE]: The app is able to load a small event log (`data/events-202605-ca.parquet`) and display a time series chart of the number of `"screen"` events witnessed by hour across a one-month time span.
 
-- TASK-200 [TODO]: The app offers a choice of event logs to load (i.e. files in the `data/` directory).
+- TASK-200 [DONE]: The app offers a choice of event logs to load (i.e. files in the `data/` directory).
 
-- TASK-300 [TODO]: The app exposes filtering options to selectively show `"screen"` event counts only for players from a specific `country`, `platform`, or `join_week`. There is also a "group by" option to display event counts broken down by any of those dimensions.
+- TASK-300 [TODO]: The app exposes filtering options to selectively show `"screen"` event counts only for players from a specific `country` class, `platform`, or `join_week`. There is also a "group by" option to display event counts broken down by any of those dimensions. (For `country`, please use the classification scheme described in AGENTS.md).
 
-- TASK-400 [TODO]: In addition to the time-series chart, the app also computes the percentage of players who accomplished the `returned_1d` event (i.e. 1-day retention rate) and who accomplished the `sub_buy_success` event (i.e. conversion to paying player).
+- TASK-400 [TODO]: In addition to the time-series chart, the app also displays the absolute number and percentage of players, among all players who pass the filter, who accomplished the `returned_1d`, `returned_2d`, and `returned_3d` events (i.e. 1/2/3-day retention rates), and also who accomplished the `sub_buy_success` event (i.e. conversion to paying player). All these events should be treated as independent, and rates reported independently; i.e., a player may accomplish `sub_buy_success` whether or not they also accomplished `returned_1d`.
 
 - TASK-500 [TODO]: Adds an "experiment analysis" mode. In this optional mode:
     - The user selects one of the experiment_ids seen in the dataset. A common one is `sub_sku_annual_only`.
