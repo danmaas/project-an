@@ -1,6 +1,6 @@
 This file tracks the state of tasks that are TODO / INPROGRESS / DONE. Please keep this updated as work progresses.
 
-- TASK-000 [INPROGRESS]: Create repo skeleton:
+- TASK-000 [DONE]: Create repo skeleton:
   - Dockerfile
   - minimal back-end code (just enough to serve the front-end UI to a browser)
   - minimal front-end code (just enough to display "hello world" with the desired UI framework)

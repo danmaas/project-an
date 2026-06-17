@@ -1,0 +1,26 @@
+# Dataset is mounted at runtime, never baked into the image
+data/
+
+# Local build artifacts (rebuilt inside the image)
+**/node_modules
+**/.venv
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.coverage
+**/coverage.xml
+**/test-results
+**/playwright-report
+
+# E2E tests run from the host, not inside the runtime image
+e2e/
+
+# VCS / IDE / OS
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# Docs
+*.md

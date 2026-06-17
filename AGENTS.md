@@ -8,7 +8,7 @@ This app will bundle together a pre-provisioned dataset and a lightweight web se
 
 No back-end database is required, since there is no need to store state across sessions. All state should be handled client-side in the browser.
 
-The front-end shall be implemented in TypeScript & Vue 3 (Composition API with `<script setup>` single-file components) with a tasteful, professional UI theme. Built with Vite, which uses esbuild for dev transforms and Rollup for production bundles. Package manager: Yarn. It is OK to use modern web technology; support for pre-2026 browsers is not required.
+The front-end shall be implemented in TypeScript & Vue 3 (Composition API with `<script setup>` single-file components) with a tasteful, professional UI theme - think Edward Tufte. Built with Vite, which uses esbuild for dev transforms and Rollup for production bundles. Package manager: Yarn. It is OK to use modern web technology; support for pre-2026 browsers is not required.
 
 The back-end shall be implemented in Python 3.14 with FastAPI + uvicorn and the classic pandas/pyarrow tools for working with Parquet dataframes. Its primary job is to serve the built front-end assets as static files and to stream the Parquet data from `/data` to the browser.
 
@@ -65,7 +65,24 @@ This is not a complete list. Other events may be present in the data.
 
 ### Running the test suite
 
-TODO: TASK-000 needs to update this.
+One-time setup (installs backend, frontend, and e2e dev deps; downloads the Playwright Chromium browser):
+
+```sh
+make install
+```
+
+Then:
+
+```sh
+make test            # all three suites: backend, frontend, e2e
+make test-backend    # pytest only (fast)
+make test-frontend   # vitest only (fast)
+make test-e2e        # builds the Docker image and runs Playwright against it
+```
+
+`make test-e2e` requires the Docker daemon to be running — it builds the image (`make build`) and then Playwright launches it via `docker run`, mounting `./data` into the container at `/data`. The container is torn down automatically when the test run ends.
+
+Other helpful targets: `make build`, `make run`, `make lint`, `make fmt`, `make typecheck`, `make clean`. Run `make help` for the full list.
 
 ## Updating Dependencies
 

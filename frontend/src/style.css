@@ -1,0 +1,19 @@
+:root {
+  --paper: #fffff8;
+  --ink: #111111;
+  --ink-muted: #555555;
+  --rule: #cccccc;
+  --font-serif: "Charter", "Iowan Old Style", "Palatino", "Georgia", serif;
+  color-scheme: light;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
