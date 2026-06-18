@@ -37,6 +37,15 @@ This file tracks the state of tasks that are TODO / INPROGRESS / DONE. Please ke
     - When "group by" is active, can we make the legend clickable, such that when the user clicks on a dimension legend label, the other values for that dimension temporarily toggle hidden? Similar to the behavior of Grafana time-series charts.
     - Make the UI expand horizontally, responsive to the browser width.
 
-- TASK-800 [TODO]: Self-contained packaging
+- TASK-800 [DONE]: Self-contained packaging
     - Create a new make target that constructs a fully self-contained container that bakes  the contents of the local data/ directory into the container's /data, instead of expecting it to be mounted at runtime
     - Create another new make target, dependent on the previous one, that then pushes this "baked" container to the ECR registry at `043633525143.dkr.ecr.us-east-1.amazonaws.com/project-an`. Assume AWS credentials exist in the environment such that `aws ecr get-login-password` will work.
+
+- TASK-810 [TODO]: Redeploy ECS service after push
+    - For `make push-bundled`, also run this command to redeploy the new image to a pre-existing ECS Express mode service:
+```
+aws ecs update-express-gateway-service \
+--region us-east-1 \
+--service-arn "arn:aws:ecs:us-east-1:043633525143:service/default/project-an" \
+--primary-container image=043633525143.dkr.ecr.us-east-1.amazonaws.com/project-an:latest,containerPort=8000
+```

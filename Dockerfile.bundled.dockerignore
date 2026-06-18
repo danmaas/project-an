@@ -1,0 +1,5 @@
+# Build context for Dockerfile.bundled: only data/ is needed. Everything else
+# is excluded so the bundled-build context stays as small as possible.
+*
+!data
+!data/**

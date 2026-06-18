@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1.7
+#
+# Bundled / self-contained variant of the runtime image (TASK-800).
+#
+# Extends the standard `project-an` runtime by copying the contents of the
+# host's data/ directory into the image at /data. The resulting container is
+# fully self-contained — no `-v ./data:/data` volume mount is needed at
+# runtime, so it can be shipped and run anywhere as a single artifact.
+#
+# A per-Dockerfile dockerignore (`Dockerfile.bundled.dockerignore`) makes
+# data/ available in this build's context without affecting the lean,
+# data-less context used by the normal `Dockerfile` build.
+
+ARG BASE_IMAGE=project-an:latest
+FROM ${BASE_IMAGE}
+
+COPY data /data
