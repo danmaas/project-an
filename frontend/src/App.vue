@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { fetchEvents, fetchFileList } from './data/parquet'
 import { applyFilters, screenEventsByHour, uniqueJoinWeeks } from './data/aggregate'
 import { computeRetentionMetrics } from './data/metrics'
+import { synthesizeRetentionEvents } from './data/synthesize'
 import { EMPTY_FILTERS, type Filters, type GroupBy, type PlayerEvent } from './types'
 import FilterPanel from './components/FilterPanel.vue'
 import MetricsTable from './components/MetricsTable.vue'
@@ -58,7 +59,10 @@ watch(selectedFile, async (filename) => {
   filters.value = { ...EMPTY_FILTERS }
   groupBy.value = null
   try {
-    events.value = await fetchEvents(filename)
+    const raw = await fetchEvents(filename)
+    // `returned_Nd` events are not present in the raw log — synthesize them
+    // from `screen` events in the appropriate windows after account creation.
+    events.value = synthesizeRetentionEvents(raw)
     status.value = 'ready'
   } catch (err) {
     status.value = 'error'

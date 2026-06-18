@@ -18,12 +18,21 @@ export async function fetchEvents(filename: string): Promise<PlayerEvent[]> {
   const file = await asyncBufferFromUrl({ url })
   const rows = (await parquetReadObjects({
     file,
-    columns: ['ts', 'event', 'user_id_hash', 'country', 'platform', 'join_week'],
+    columns: [
+      'ts',
+      'event',
+      'user_id_hash',
+      'user_create_time',
+      'country',
+      'platform',
+      'join_week',
+    ],
   })) as Array<Record<string, unknown>>
   return rows.map((r) => ({
     ts: toDate(r.ts),
     event: String(r.event),
     userIdHash: String(r.user_id_hash ?? ''),
+    userCreateTime: toDate(r.user_create_time),
     countryAgg: classifyCountry(r.country == null ? null : String(r.country)),
     platform: String(r.platform ?? ''),
     joinWeek: toDate(r.join_week),

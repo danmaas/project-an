@@ -28,6 +28,7 @@ function build(players: PlayerSpec[]): PlayerEvent[] {
         ts: new Date('2026-05-01T10:00:00Z'),
         event: ev,
         userIdHash: id,
+        userCreateTime: joinWeek,
         countryAgg,
         platform,
         joinWeek,

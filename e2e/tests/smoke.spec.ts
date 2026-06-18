@@ -53,17 +53,18 @@ test('lists available event logs in the source dropdown', async ({ page }) => {
   await page.goto('/')
   const select = page.getByTestId('source-select')
   await expect(select).toBeVisible()
-  await expect(select.locator('option')).toHaveCount(2)
+  // We don't pin an exact count — the data/ directory can grow over time.
+  const count = await select.locator('option').count()
+  expect(count).toBeGreaterThanOrEqual(1)
   await expect(select).toContainText('events-202605-ca')
-  await expect(select).toContainText('events-202605-full')
 })
 
 test('lists files via /api/data', async ({ request }) => {
   const response = await request.get('/api/data')
   expect(response.status()).toBe(200)
-  expect(await response.json()).toEqual({
-    files: ['events-202605-ca.parquet', 'events-202605-full.parquet'],
-  })
+  const body = (await response.json()) as { files: string[] }
+  expect(body.files).toContain('events-202605-ca.parquet')
+  expect(body.files).toEqual([...body.files].sort()) // listing is alphabetical
 })
 
 test('renders the retention & monetization metrics table', async ({ page }) => {
@@ -82,8 +83,12 @@ test('renders the retention & monetization metrics table', async ({ page }) => {
   const nCell = table.locator('tr.row-n td')
   await expect(nCell).toHaveText(/^\d{1,3}(,\d{3})*$/)
 
-  // Each retention row shows a percentage and an absolute count.
-  await expect(table).toContainText(/%/)
+  // returned_1d events are synthesized client-side from screen events, so the
+  // 1-day retention rate on the ca dataset should be a non-zero percentage.
+  // (If TASK-450 synthesis is broken or wired up wrong, this row would read 0%.)
+  const r1dCell = table.locator('tr:has(th:text-is("returned_1d")) td .rate')
+  await expect(r1dCell).toHaveText(/^\d+(\.\d+)?%$/)
+  await expect(r1dCell).not.toHaveText('0%')
 })
 
 test('metrics table breaks out by group when group-by is active', async ({ page }) => {

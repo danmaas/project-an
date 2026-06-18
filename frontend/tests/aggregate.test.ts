@@ -18,6 +18,7 @@ const e = (
   ts: new Date(iso),
   event,
   userIdHash: 'u0',
+  userCreateTime: new Date(`${joinWeek}T00:00:00Z`),
   countryAgg,
   platform,
   joinWeek: new Date(`${joinWeek}T00:00:00Z`),

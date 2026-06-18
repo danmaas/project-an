@@ -20,6 +20,7 @@ The input data consists of a single large table of "events" where each row repre
 
 - `ts`: UTC timestamp of the event
 - `user_id_hash`: string that uniquely identifies an individual player
+- `user_create_time`: UTC timestamp of the player account creation
 - `country`: 2-letter ISO code for the player's country.
   - The dataset may include players from dozens of countries. To simplify the analysis UI, instead of working with raw `country` values, classify `country` as follows:
     - `us`,`ca`,`gb`,`ie`,`au`,`nz`: classify collectively as `ENG` for "English-speaking" countries.
@@ -37,7 +38,7 @@ The input data consists of a single large table of "events" where each row repre
 - `problem_set_started`: The player began working on a puzzle set in the game.
 - `problem_set_completed`: The player finished a puzzle set in the game.
 - `lesson_started`: The player began taking a lesson in the game.
-- `returned_1d`, `returned_2d`, `returned_3d`, `returned_5d`, `returned_7d`: The player returned to the app on the Nth day after account creation.
+- `returned_1d`, `returned_2d`, `returned_3d`, `returned_5d`, `returned_7d`: The player returned to the app on the Nth day after account creation. (* these are synthetic events derived from the `screen` event occurring in specific time windows since account creation; see TASK-450).
 - `pve_game_started`: The player began playing a match against an AI opponent.
 - `pvp_game_started`: The player began playing a match against a human opponent.
 - `sub_buy_start`: The player started the flow to purchase an in-app subscription.

@@ -6,6 +6,8 @@ export interface PlayerEvent {
   event: string
   /** Stable player identifier — the `user_id_hash` column in the Parquet. */
   userIdHash: string
+  /** When the player's account was created (UTC). */
+  userCreateTime: Date
   /**
    * Aggregated country class (see `data/country.ts`) — e.g. `ENG`, `kr`, `EUR`,
    * `Other`. Deliberately NOT named `country` so it can't be confused with the
