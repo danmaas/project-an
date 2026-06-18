@@ -7,6 +7,7 @@ import type {
 } from '../types'
 import { RETENTION_EVENTS } from '../types'
 import { joinWeekKey } from './aggregate'
+import { experimentIdFromGroupBy } from './experiment'
 
 interface PlayerAttrs {
   countryAgg: string
@@ -23,11 +24,16 @@ interface PlayerAttrs {
  *
  * When `groupBy` is set, results are split by that dimension; otherwise a
  * single aggregate row (with no `group` label) is returned.
+ *
+ * For experiment-mode group-by (TASK-500), pass `variationAssignments` (from
+ * `computeVariationAssignments`): players absent from the map are excluded,
+ * and remaining players are bucketed by their variation_id.
  */
 export function computeRetentionMetrics(
   events: PlayerEvent[],
   filters: Filters,
   groupBy: GroupBy = null,
+  variationAssignments?: Map<string, string> | null,
 ): RetentionMetrics[] {
   // Per-player attributes are constant across all of a player's events (per
   // schema). Snapshot them once so subsequent filtering / grouping is O(P)
@@ -44,9 +50,10 @@ export function computeRetentionMetrics(
     }
   }
 
-  // Set of player ids that survive the filter.
+  // Set of player ids that survive the filter, including experiment assignment.
   const matched = new Set<string>()
   for (const [id, attrs] of playerAttrs) {
+    if (variationAssignments && !variationAssignments.has(id)) continue
     if (filters.countryAgg && attrs.countryAgg !== filters.countryAgg) continue
     if (filters.platform && attrs.platform !== filters.platform) continue
     if (filters.joinWeek && joinWeekKey(attrs.joinWeek) !== filters.joinWeek) continue
@@ -54,10 +61,13 @@ export function computeRetentionMetrics(
   }
 
   // group label -> set of player ids that fall into that group
+  const isExperiment = experimentIdFromGroupBy(groupBy) !== null
   const groups = new Map<string, Set<string>>()
   for (const id of matched) {
     const attrs = playerAttrs.get(id)!
-    const key = groupKeyForPlayer(attrs, groupBy)
+    const key = isExperiment
+      ? (variationAssignments?.get(id) ?? '')
+      : groupKeyForPlayer(attrs, groupBy)
     let bucket = groups.get(key)
     if (!bucket) {
       bucket = new Set()

@@ -32,6 +32,8 @@ function build(players: PlayerSpec[]): PlayerEvent[] {
         countryAgg,
         platform,
         joinWeek,
+        experimentId: '',
+        variationId: '',
       })
     }
   }
@@ -190,6 +192,53 @@ describe('computeRetentionMetrics', () => {
         counts: { returned_1d: 1, returned_2d: 0, returned_3d: 0, sub_buy_success: 0 },
       },
     ])
+  })
+
+  it('breaks results out by variation_id in experiment mode', () => {
+    const events = build([
+      { id: 'p1', events: ['screen', 'returned_1d', 'sub_buy_success'] },
+      { id: 'p2', events: ['screen', 'returned_1d'] },
+      { id: 'p3', events: ['screen', 'sub_buy_success'] },
+      { id: 'p4', events: ['screen'] }, // not in the assignment map → excluded
+    ])
+    const assignments = new Map([
+      ['p1', 'on'],
+      ['p2', 'on'],
+      ['p3', 'off'],
+    ])
+    const result = computeRetentionMetrics(events, EMPTY_FILTERS, 'experiment:foo', assignments)
+    expect(result.map((r) => [r.group, r.totalPlayers])).toEqual([
+      ['off', 1],
+      ['on', 2],
+    ])
+    const on = result.find((r) => r.group === 'on')!
+    expect(on.counts.returned_1d).toBe(2)
+    expect(on.counts.sub_buy_success).toBe(1)
+    const off = result.find((r) => r.group === 'off')!
+    expect(off.counts.returned_1d).toBe(0)
+    expect(off.counts.sub_buy_success).toBe(1)
+  })
+
+  it('combines experiment filter with countryAgg filter', () => {
+    const events = build([
+      { id: 'p1', countryAgg: 'ENG', events: ['screen', 'returned_1d'] },
+      { id: 'p2', countryAgg: 'jp', events: ['screen', 'returned_1d'] },
+      { id: 'p3', countryAgg: 'ENG', events: ['screen'] },
+    ])
+    const assignments = new Map([
+      ['p1', 'on'],
+      ['p2', 'on'],
+      ['p3', 'on'],
+    ])
+    const result = computeRetentionMetrics(
+      events,
+      { ...EMPTY_FILTERS, countryAgg: 'ENG' },
+      'experiment:foo',
+      assignments,
+    )
+    expect(result).toHaveLength(1)
+    expect(result[0].totalPlayers).toBe(2) // p1 + p3 (ENG and assigned)
+    expect(result[0].counts.returned_1d).toBe(1)
   })
 
   it('counts a player once even when they have many screen events', () => {

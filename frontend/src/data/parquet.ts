@@ -26,6 +26,8 @@ export async function fetchEvents(filename: string): Promise<PlayerEvent[]> {
       'country',
       'platform',
       'join_week',
+      'experiment_id',
+      'variation_id',
     ],
   })) as Array<Record<string, unknown>>
   return rows.map((r) => ({
@@ -36,6 +38,8 @@ export async function fetchEvents(filename: string): Promise<PlayerEvent[]> {
     countryAgg: classifyCountry(r.country == null ? null : String(r.country)),
     platform: String(r.platform ?? ''),
     joinWeek: toDate(r.join_week),
+    experimentId: r.experiment_id == null ? '' : String(r.experiment_id),
+    variationId: r.variation_id == null ? '' : String(r.variation_id),
   }))
 }
 

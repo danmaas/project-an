@@ -1,15 +1,28 @@
 import type { Filters, GroupBy, HourlyBucket, PlayerEvent } from '../types'
+import { experimentIdFromGroupBy } from './experiment'
 
 /** ISO date string ("YYYY-MM-DD") in UTC, used as a stable key for join-week. */
 export function joinWeekKey(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
-/** Apply the user's filter selections. A null filter means "all values pass". */
-export function applyFilters(events: PlayerEvent[], filters: Filters): PlayerEvent[] {
+/**
+ * Apply the user's filter selections. A null filter means "all values pass".
+ *
+ * When `variationAssignments` is provided (TASK-500 experiment mode), events
+ * for players not in the map are also dropped — these are players who never
+ * saw the experiment or only saw the `control` dummy variation.
+ */
+export function applyFilters(
+  events: PlayerEvent[],
+  filters: Filters,
+  variationAssignments?: Map<string, string> | null,
+): PlayerEvent[] {
   const { countryAgg, platform, joinWeek } = filters
-  if (!countryAgg && !platform && !joinWeek) return events
+  const hasFilter = countryAgg || platform || joinWeek
+  if (!hasFilter && !variationAssignments) return events
   return events.filter((e) => {
+    if (variationAssignments && !variationAssignments.has(e.userIdHash)) return false
     if (countryAgg && e.countryAgg !== countryAgg) return false
     if (platform && e.platform !== platform) return false
     if (joinWeek && joinWeekKey(e.joinWeek) !== joinWeek) return false
@@ -17,17 +30,24 @@ export function applyFilters(events: PlayerEvent[], filters: Filters): PlayerEve
   })
 }
 
-/** Bucket events by UTC hour, optionally split by a group-by dimension. */
+/**
+ * Bucket events by UTC hour, optionally split by a group-by dimension.
+ *
+ * When the group-by is an experiment, `variationAssignments` is required to
+ * resolve each player's variation_id; pass the same map that was used to
+ * pre-filter via `applyFilters`.
+ */
 export function bucketByHour(
   events: PlayerEvent[],
   groupBy: GroupBy = null,
+  variationAssignments?: Map<string, string> | null,
 ): HourlyBucket[] {
   // Keyed by "<group>\x00<hour-ms>" so a single Map handles both grouped and
   // ungrouped aggregation without separate code paths.
   const counts = new Map<string, number>()
   for (const e of events) {
     const hour = floorToHour(e.ts).getTime()
-    const group = groupKeyFor(e, groupBy)
+    const group = groupKeyFor(e, groupBy, variationAssignments)
     const key = `${group}\x00${hour}`
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
@@ -49,10 +69,12 @@ export function bucketByHour(
 export function screenEventsByHour(
   events: PlayerEvent[],
   groupBy: GroupBy = null,
+  variationAssignments?: Map<string, string> | null,
 ): HourlyBucket[] {
   return bucketByHour(
     events.filter((e) => e.event === 'screen'),
     groupBy,
+    variationAssignments,
   )
 }
 
@@ -63,10 +85,17 @@ export function uniqueJoinWeeks(events: PlayerEvent[]): string[] {
   return [...set].sort()
 }
 
-function groupKeyFor(e: PlayerEvent, groupBy: GroupBy): string {
+function groupKeyFor(
+  e: PlayerEvent,
+  groupBy: GroupBy,
+  variationAssignments?: Map<string, string> | null,
+): string {
   if (groupBy === 'countryAgg') return e.countryAgg
   if (groupBy === 'platform') return e.platform
   if (groupBy === 'joinWeek') return joinWeekKey(e.joinWeek)
+  if (experimentIdFromGroupBy(groupBy)) {
+    return variationAssignments?.get(e.userIdHash) ?? ''
+  }
   return ''
 }
 

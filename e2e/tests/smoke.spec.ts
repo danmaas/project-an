@@ -104,6 +104,33 @@ test('metrics table breaks out by group when group-by is active', async ({ page 
   await expect.poll(async () => (await headers.count()) - 1).toBeGreaterThanOrEqual(2)
 })
 
+test('group-by lists experiments and selecting one breaks metrics out by variation', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await expect(page.getByTestId('metrics-table')).toBeVisible({ timeout: 30_000 })
+
+  // The dropdown should include the dimension options plus an experiment optgroup.
+  const groupBy = page.getByTestId('group-by')
+  await expect(
+    groupBy.locator('optgroup[label="experiment"] option').first(),
+  ).toBeAttached()
+
+  // sub_sku_annual_only has variations 'off' and 'on' in the ca dataset.
+  await groupBy.selectOption('experiment:sub_sku_annual_only')
+
+  const headers = page.locator('[data-testid="metrics-table"] thead th')
+  await expect(headers).toHaveText(['', 'off', 'on'], { timeout: 5_000 })
+
+  // The n-row should contain a non-zero count for both variations.
+  const nCells = page.locator('[data-testid="metrics-table"] tr.row-n td')
+  await expect(nCells).toHaveCount(2)
+  for (let i = 0; i < 2; i++) {
+    await expect(nCells.nth(i)).toHaveText(/^\d{1,3}(,\d{3})*$/)
+    await expect(nCells.nth(i)).not.toHaveText('0')
+  }
+})
+
 test('exposes a /healthz endpoint that returns 200 OK', async ({ request }) => {
   const response = await request.get('/healthz')
   expect(response.status()).toBe(200)

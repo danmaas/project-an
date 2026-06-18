@@ -8,6 +8,7 @@ const props = defineProps<{
   filters: Filters
   groupBy: GroupBy
   availableJoinWeeks: readonly string[]
+  availableExperimentIds: readonly string[]
 }>()
 
 const emit = defineEmits<{
@@ -85,6 +86,15 @@ const isGrouped = computed(() => ({
         <option value="countryAgg">country</option>
         <option value="platform">platform</option>
         <option value="joinWeek">join_week</option>
+        <optgroup v-if="availableExperimentIds.length > 0" label="experiment">
+          <option
+            v-for="exp in availableExperimentIds"
+            :key="exp"
+            :value="`experiment:${exp}`"
+          >
+            {{ exp }}
+          </option>
+        </optgroup>
       </select>
     </label>
   </div>

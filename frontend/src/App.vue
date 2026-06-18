@@ -2,6 +2,11 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { fetchEvents, fetchFileList } from './data/parquet'
 import { applyFilters, screenEventsByHour, uniqueJoinWeeks } from './data/aggregate'
+import {
+  computeVariationAssignments,
+  experimentIdFromGroupBy,
+  uniqueExperimentIds,
+} from './data/experiment'
 import { computeRetentionMetrics } from './data/metrics'
 import { synthesizeRetentionEvents } from './data/synthesize'
 import { EMPTY_FILTERS, type Filters, type GroupBy, type PlayerEvent } from './types'
@@ -22,14 +27,33 @@ const filters = ref<Filters>({ ...EMPTY_FILTERS })
 const groupBy = ref<GroupBy>(null)
 
 const availableJoinWeeks = computed(() => uniqueJoinWeeks(events.value))
-const filteredEvents = computed(() => applyFilters(events.value, filters.value))
-const screenBuckets = computed(() => screenEventsByHour(filteredEvents.value, groupBy.value))
+const availableExperimentIds = computed(() => uniqueExperimentIds(events.value))
+
+// Experiment-analysis mode: when group-by is `experiment:<id>`, compute each
+// player's first non-control variation_id for that experiment. Used both as a
+// player-level filter and as the chart/metrics group key.
+const variationAssignments = computed(() => {
+  const id = experimentIdFromGroupBy(groupBy.value)
+  return id ? computeVariationAssignments(events.value, id) : null
+})
+
+const filteredEvents = computed(() =>
+  applyFilters(events.value, filters.value, variationAssignments.value),
+)
+const screenBuckets = computed(() =>
+  screenEventsByHour(filteredEvents.value, groupBy.value, variationAssignments.value),
+)
 const totalEvents = computed(() => screenBuckets.value.reduce((sum, b) => sum + b.count, 0))
 // Retention metrics are computed over the unfiltered events, applying the
 // filter at the player level inside computeRetentionMetrics. This is more
 // efficient than re-filtering events for every metric.
 const retentionMetrics = computed(() =>
-  computeRetentionMetrics(events.value, filters.value, groupBy.value),
+  computeRetentionMetrics(
+    events.value,
+    filters.value,
+    groupBy.value,
+    variationAssignments.value,
+  ),
 )
 
 function formatFilename(name: string): string {
@@ -95,6 +119,7 @@ watch(selectedFile, async (filename) => {
       :filters="filters"
       :group-by="groupBy"
       :available-join-weeks="availableJoinWeeks"
+      :available-experiment-ids="availableExperimentIds"
       @update:filters="filters = $event"
       @update:group-by="groupBy = $event"
     />

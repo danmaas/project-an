@@ -16,6 +16,10 @@ export interface PlayerEvent {
   countryAgg: string
   platform: string
   joinWeek: Date
+  /** Populated only when `event === 'experiment_viewed'`; '' otherwise. */
+  experimentId: string
+  /** Populated only when `event === 'experiment_viewed'`; '' otherwise. */
+  variationId: string
 }
 
 export interface HourlyBucket {
@@ -31,7 +35,19 @@ export interface Filters {
   joinWeek: string | null
 }
 
-export type GroupBy = null | 'countryAgg' | 'platform' | 'joinWeek'
+// Group-by selector value:
+//   - null                  → no grouping
+//   - 'countryAgg' | 'platform' | 'joinWeek'  → group by that dimension
+//   - `experiment:<id>`     → "experiment analysis" mode (TASK-500): players
+//                             without a non-control variation_id for <id> are
+//                             excluded, and remaining players are grouped by
+//                             their variation.
+export type GroupBy =
+  | null
+  | 'countryAgg'
+  | 'platform'
+  | 'joinWeek'
+  | `experiment:${string}`
 
 export const PLATFORMS: readonly string[] = ['ios', 'android', 'web']
 

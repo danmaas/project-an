@@ -19,6 +19,8 @@ function ev(
   platform = 'ios',
   joinWeek = '2026-04-27',
   userIdHash = 'u-default',
+  experimentId = '',
+  variationId = '',
 ): PlayerEvent {
   return {
     ts: new Date(iso),
@@ -28,6 +30,8 @@ function ev(
     countryAgg,
     platform,
     joinWeek: new Date(`${joinWeek}T00:00:00Z`),
+    experimentId,
+    variationId,
   }
 }
 
@@ -164,6 +168,118 @@ describe('App', () => {
 
     expect(wrapper.text()).toContain('Failed to load data')
     expect(wrapper.text()).toContain('boom')
+  })
+
+  it('exposes experiment_ids as options in the group-by dropdown', async () => {
+    const eventsWithExperiments: PlayerEvent[] = [
+      ...sampleEvents,
+      ev(
+        '2026-05-01T09:00:00Z',
+        'experiment_viewed',
+        'ENG',
+        'ios',
+        '2026-04-27',
+        'p1',
+        'sub_sku_annual_only',
+        'on',
+      ),
+      ev(
+        '2026-05-01T09:00:00Z',
+        'experiment_viewed',
+        'ENG',
+        'android',
+        '2026-04-27',
+        'p2',
+        'sub_sku_annual_only',
+        'off',
+      ),
+      ev(
+        '2026-05-01T09:00:00Z',
+        'experiment_viewed',
+        'jp',
+        'ios',
+        '2026-05-04',
+        'p3',
+        'tutorial',
+        'on',
+      ),
+    ]
+    fetchFileListMock.mockResolvedValue(['events-a.parquet'])
+    fetchEventsMock.mockResolvedValue(eventsWithExperiments)
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    const groupBy = wrapper.get('[data-testid="group-by"]')
+    const values = groupBy.findAll('option').map((o) => o.attributes('value'))
+    expect(values).toContain('experiment:sub_sku_annual_only')
+    expect(values).toContain('experiment:tutorial')
+  })
+
+  it('selecting an experiment groups players by their variation_id', async () => {
+    const eventsWithExperiments: PlayerEvent[] = [
+      // p1 (ENG, ios) is assigned to "on" for sub_sku_annual_only and has returned_1d
+      ev(
+        '2026-05-01T09:00:00Z',
+        'experiment_viewed',
+        'ENG',
+        'ios',
+        '2026-04-27',
+        'p1',
+        'sub_sku_annual_only',
+        'on',
+      ),
+      ev('2026-05-02T10:00:00Z', 'returned_1d', 'ENG', 'ios', '2026-04-27', 'p1'),
+      // p2 (ENG, android) is assigned to "off", no retention events
+      ev(
+        '2026-05-01T09:00:00Z',
+        'experiment_viewed',
+        'ENG',
+        'android',
+        '2026-04-27',
+        'p2',
+        'sub_sku_annual_only',
+        'off',
+      ),
+      // p3 (jp) is on a different experiment → excluded entirely when grouping by sub_sku_annual_only
+      ev(
+        '2026-05-01T09:00:00Z',
+        'experiment_viewed',
+        'jp',
+        'ios',
+        '2026-05-04',
+        'p3',
+        'tutorial',
+        'on',
+      ),
+      // p4 only saw "control" → excluded as a dummy variation
+      ev(
+        '2026-05-01T09:00:00Z',
+        'experiment_viewed',
+        'ENG',
+        'ios',
+        '2026-04-27',
+        'p4',
+        'sub_sku_annual_only',
+        'control',
+      ),
+    ]
+    fetchFileListMock.mockResolvedValue(['events-a.parquet'])
+    fetchEventsMock.mockResolvedValue(eventsWithExperiments)
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    await wrapper
+      .get('[data-testid="group-by"]')
+      .setValue('experiment:sub_sku_annual_only')
+    await flushPromises()
+
+    const headers = wrapper.findAll('[data-testid="metrics-table"] thead th').map((th) =>
+      th.text(),
+    )
+    // Empty row-label header + one column per variation (off, on, sorted).
+    expect(headers).toEqual(['', 'off', 'on'])
   })
 
   it('renders the retention metrics table with per-player counts and rates', async () => {

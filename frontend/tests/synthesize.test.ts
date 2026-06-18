@@ -25,6 +25,8 @@ function build(userIdHash: string, specs: EventSpec[]): PlayerEvent[] {
       countryAgg: 'ENG',
       platform: 'ios',
       joinWeek: new Date('2026-04-27T00:00:00Z'),
+      experimentId: '',
+      variationId: '',
     }
   })
 }

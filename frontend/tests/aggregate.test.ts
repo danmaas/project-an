@@ -22,6 +22,8 @@ const e = (
   countryAgg,
   platform,
   joinWeek: new Date(`${joinWeek}T00:00:00Z`),
+  experimentId: '',
+  variationId: '',
 })
 
 describe('bucketByHour', () => {
@@ -182,6 +184,61 @@ describe('applyFilters', () => {
     expect(result).toHaveLength(1)
     expect(result[0].countryAgg).toBe('ENG')
     expect(result[0].platform).toBe('ios')
+  })
+})
+
+describe('experiment-mode grouping', () => {
+  // Events tagged with explicit userIdHash so we can build a variation map.
+  const eu = (
+    iso: string,
+    event: string,
+    userIdHash: string,
+  ): PlayerEvent => ({
+    ts: new Date(iso),
+    event,
+    userIdHash,
+    userCreateTime: new Date('2026-04-27T00:00:00Z'),
+    countryAgg: 'ENG',
+    platform: 'ios',
+    joinWeek: new Date('2026-04-27T00:00:00Z'),
+    experimentId: '',
+    variationId: '',
+  })
+
+  it('applyFilters drops events for players absent from the variation map', () => {
+    const events = [
+      eu('2026-05-01T10:00:00Z', 'screen', 'p1'),
+      eu('2026-05-01T10:00:00Z', 'screen', 'p2'),
+      eu('2026-05-01T10:00:00Z', 'screen', 'p3'),
+    ]
+    const assignments = new Map([
+      ['p1', 'on'],
+      ['p3', 'off'],
+    ])
+    const result = applyFilters(
+      events,
+      { countryAgg: null, platform: null, joinWeek: null },
+      assignments,
+    )
+    expect(result.map((e) => e.userIdHash)).toEqual(['p1', 'p3'])
+  })
+
+  it('bucketByHour uses variation_id as the group key in experiment mode', () => {
+    const events = [
+      eu('2026-05-01T10:00:00Z', 'screen', 'p1'),
+      eu('2026-05-01T10:30:00Z', 'screen', 'p2'),
+      eu('2026-05-01T10:00:00Z', 'screen', 'p3'),
+    ]
+    const assignments = new Map([
+      ['p1', 'on'],
+      ['p2', 'on'],
+      ['p3', 'off'],
+    ])
+    const result = bucketByHour(events, 'experiment:foo', assignments)
+    expect(result).toEqual([
+      { hour: new Date('2026-05-01T10:00:00Z'), count: 1, group: 'off' },
+      { hour: new Date('2026-05-01T10:00:00Z'), count: 2, group: 'on' },
+    ])
   })
 })
 
