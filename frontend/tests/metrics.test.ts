@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { computeRetentionMetrics } from '../src/data/metrics'
-import { EMPTY_FILTERS, type PlayerEvent } from '../src/types'
+import { chiSquareForMetric, computeRetentionMetrics } from '../src/data/metrics'
+import { EMPTY_FILTERS, type PlayerEvent, type RetentionMetrics } from '../src/types'
 
 let nextId = 0
 function userId(): string {
@@ -241,7 +241,7 @@ describe('computeRetentionMetrics', () => {
     expect(result[0].counts.returned_1d).toBe(1)
   })
 
-  it('counts a player once even when they have many screen events', () => {
+  it('counts a player once even when they have many screen events (chi-square placeholder above)', () => {
     // Realistic case: a single player generates hundreds of screen events
     // but is still one player in the denominator.
     const id = userId()
@@ -254,5 +254,78 @@ describe('computeRetentionMetrics', () => {
     const [m] = computeRetentionMetrics(events, EMPTY_FILTERS, null)
     expect(m.totalPlayers).toBe(1)
     expect(m.counts.returned_1d).toBe(1)
+  })
+})
+
+describe('chiSquareForMetric', () => {
+  const make = (
+    group: string,
+    totalPlayers: number,
+    returned_1d: number,
+  ): RetentionMetrics => ({
+    group,
+    totalPlayers,
+    counts: {
+      returned_1d,
+      returned_2d: 0,
+      returned_3d: 0,
+      sub_buy_success: 0,
+    },
+  })
+
+  it('returns null when there are fewer than 2 groups', () => {
+    expect(chiSquareForMetric([make('all', 100, 20)], 'returned_1d')).toBeNull()
+    expect(chiSquareForMetric([], 'returned_1d')).toBeNull()
+  })
+
+  it('returns null when every group is empty', () => {
+    expect(
+      chiSquareForMetric([make('a', 0, 0), make('b', 0, 0)], 'returned_1d'),
+    ).toBeNull()
+  })
+
+  it('gives p ≈ 1 when both variations have the same accomplishment rate', () => {
+    const r = chiSquareForMetric(
+      [make('off', 100, 20), make('on', 100, 20)],
+      'returned_1d',
+    )
+    expect(r).not.toBeNull()
+    expect(r!.df).toBe(1)
+    expect(r!.chi2).toBeCloseTo(0, 6)
+    expect(r!.p).toBeCloseTo(1, 6)
+  })
+
+  it('gives a very small p when variations differ drastically', () => {
+    const r = chiSquareForMetric(
+      [make('off', 100, 5), make('on', 100, 95)],
+      'returned_1d',
+    )
+    expect(r).not.toBeNull()
+    expect(r!.df).toBe(1)
+    expect(r!.p).toBeLessThan(0.001)
+  })
+
+  it('df scales with number of groups − 1', () => {
+    const r = chiSquareForMetric(
+      [
+        make('a', 100, 10),
+        make('b', 100, 20),
+        make('c', 100, 30),
+      ],
+      'returned_1d',
+    )
+    expect(r!.df).toBe(2)
+  })
+
+  it('handles unequal group sizes correctly', () => {
+    // 100 vs 1000 players; "on" has noticeably higher rate.
+    const r = chiSquareForMetric(
+      [make('off', 100, 10), make('on', 1000, 200)],
+      'returned_1d',
+    )
+    expect(r).not.toBeNull()
+    expect(r!.chi2).toBeGreaterThan(0)
+    expect(r!.p).toBeGreaterThan(0)
+    expect(r!.p).toBeLessThan(1)
   })
 })

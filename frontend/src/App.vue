@@ -7,9 +7,13 @@ import {
   experimentIdFromGroupBy,
   uniqueExperimentIds,
 } from './data/experiment'
-import { computeRetentionMetrics } from './data/metrics'
+import { chiSquareForMetric, computeRetentionMetrics } from './data/metrics'
+import type { ChiSquareResult } from './data/chisquare'
+import { RETENTION_EVENTS, type RetentionEvent } from './types'
 import { synthesizeRetentionEvents } from './data/synthesize'
 import { EMPTY_FILTERS, type Filters, type GroupBy, type PlayerEvent } from './types'
+// Note: RETENTION_EVENTS / RetentionEvent / ChiSquareResult imported above
+// near the metrics imports to keep related code together.
 import FilterPanel from './components/FilterPanel.vue'
 import MetricsTable from './components/MetricsTable.vue'
 import TimeSeriesChart from './components/TimeSeriesChart.vue'
@@ -54,6 +58,20 @@ const retentionMetrics = computed(() =>
     groupBy.value,
     variationAssignments.value,
   ),
+)
+
+// Chi-square test of independence is only meaningful in experiment-analysis
+// mode (TASK-510), and only when there are ≥2 variations to compare.
+const chiSquareResults = computed<Record<RetentionEvent, ChiSquareResult | null> | null>(
+  () => {
+    if (!variationAssignments.value) return null
+    if (retentionMetrics.value.length < 2) return null
+    const out = {} as Record<RetentionEvent, ChiSquareResult | null>
+    for (const ev of RETENTION_EVENTS) {
+      out[ev] = chiSquareForMetric(retentionMetrics.value, ev)
+    }
+    return out
+  },
 )
 
 function formatFilename(name: string): string {
@@ -135,7 +153,7 @@ watch(selectedFile, async (filename) => {
           {{ totalEvents.toLocaleString() }} screen events,
           {{ screenBuckets.length }} hourly buckets.
         </p>
-        <MetricsTable :metrics="retentionMetrics" />
+        <MetricsTable :metrics="retentionMetrics" :chi-square="chiSquareResults" />
       </template>
     </section>
   </article>

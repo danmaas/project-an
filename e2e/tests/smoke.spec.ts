@@ -119,16 +119,38 @@ test('group-by lists experiments and selecting one breaks metrics out by variati
   // sub_sku_annual_only has variations 'off' and 'on' in the ca dataset.
   await groupBy.selectOption('experiment:sub_sku_annual_only')
 
+  // Headers: empty | off | on | p-value (TASK-510 adds the last column in
+  // experiment-analysis mode).
   const headers = page.locator('[data-testid="metrics-table"] thead th')
-  await expect(headers).toHaveText(['', 'off', 'on'], { timeout: 5_000 })
+  await expect(headers).toHaveText(['', 'off', 'on', 'p‑value'], { timeout: 5_000 })
 
-  // The n-row should contain a non-zero count for both variations.
-  const nCells = page.locator('[data-testid="metrics-table"] tr.row-n td')
+  // Variation columns: each has a non-zero player count.
+  const nCells = page.locator('[data-testid="metrics-table"] tr.row-n td:not(.pvalue)')
   await expect(nCells).toHaveCount(2)
   for (let i = 0; i < 2; i++) {
     await expect(nCells.nth(i)).toHaveText(/^\d{1,3}(,\d{3})*$/)
     await expect(nCells.nth(i)).not.toHaveText('0')
   }
+
+  // Each retention-event row carries a chi-square p-value cell with either
+  // a 0.xxx number or "<0.001".
+  const pvalueCells = page.locator(
+    '[data-testid="metrics-table"] tbody tr:not(.row-n) td.pvalue',
+  )
+  await expect(pvalueCells).toHaveCount(4)
+  for (let i = 0; i < 4; i++) {
+    await expect(pvalueCells.nth(i)).toHaveText(/^(<0\.001|>0\.999|0\.\d{3})$/)
+  }
+})
+
+test('p-value column is hidden for non-experiment group-by', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByTestId('metrics-table')).toBeVisible({ timeout: 30_000 })
+
+  await page.getByTestId('group-by').selectOption('countryAgg')
+  // Wait briefly for the reactive update.
+  await page.waitForTimeout(200)
+  await expect(page.getByTestId('pvalue-header')).toHaveCount(0)
 })
 
 test('exposes a /healthz endpoint that returns 200 OK', async ({ request }) => {

@@ -7,6 +7,7 @@ import type {
 } from '../types'
 import { RETENTION_EVENTS } from '../types'
 import { joinWeekKey } from './aggregate'
+import { chiSquareTest, type ChiSquareResult } from './chisquare'
 import { experimentIdFromGroupBy } from './experiment'
 
 interface PlayerAttrs {
@@ -121,4 +122,22 @@ function groupKeyForPlayer(attrs: PlayerAttrs, groupBy: GroupBy): string {
   if (groupBy === 'platform') return attrs.platform
   if (groupBy === 'joinWeek') return joinWeekKey(attrs.joinWeek)
   return ''
+}
+
+/**
+ * Chi-square test of independence for a single retention metric across
+ * variation_id groups.
+ *
+ * Contingency table is variations × {accomplished, did-not-accomplish}; df is
+ * always `(groups − 1)·1 = groups − 1`. Returns null when the test isn't
+ * meaningful (fewer than 2 groups, or every group is empty).
+ */
+export function chiSquareForMetric(
+  metrics: readonly RetentionMetrics[],
+  event: RetentionEvent,
+): ChiSquareResult | null {
+  if (metrics.length < 2) return null
+  const table = metrics.map((m) => [m.counts[event], m.totalPlayers - m.counts[event]])
+  if (table.every((row) => row[0] + row[1] === 0)) return null
+  return chiSquareTest(table)
 }

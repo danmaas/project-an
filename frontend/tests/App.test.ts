@@ -278,8 +278,56 @@ describe('App', () => {
     const headers = wrapper.findAll('[data-testid="metrics-table"] thead th').map((th) =>
       th.text(),
     )
-    // Empty row-label header + one column per variation (off, on, sorted).
-    expect(headers).toEqual(['', 'off', 'on'])
+    // Empty row-label header, one column per variation (off, on, sorted),
+    // and the chi-square p-value column at the end (TASK-510).
+    expect(headers).toEqual(['', 'off', 'on', 'p‑value'])
+  })
+
+  it('renders chi-square p-values when in experiment mode with ≥2 variations', async () => {
+    // Build a population with a strong difference between variations so p < 0.001.
+    const events: PlayerEvent[] = []
+    for (let i = 0; i < 100; i++) {
+      const id = `on-${i}`
+      // Each "on" player saw the experiment as 'on' and returned on day 1.
+      events.push(
+        ev('2026-05-01T09:00:00Z', 'experiment_viewed', 'ENG', 'ios', '2026-04-27', id, 'expA', 'on'),
+        ev('2026-05-02T10:00:00Z', 'returned_1d', 'ENG', 'ios', '2026-04-27', id),
+      )
+    }
+    for (let i = 0; i < 100; i++) {
+      const id = `off-${i}`
+      // Each "off" player saw the experiment as 'off' and did NOT return.
+      events.push(
+        ev('2026-05-01T09:00:00Z', 'experiment_viewed', 'ENG', 'ios', '2026-04-27', id, 'expA', 'off'),
+        ev('2026-05-01T10:00:00Z', 'screen', 'ENG', 'ios', '2026-04-27', id),
+      )
+    }
+    fetchFileListMock.mockResolvedValue(['events-a.parquet'])
+    fetchEventsMock.mockResolvedValue(events)
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.get('[data-testid="group-by"]').setValue('experiment:expA')
+    await flushPromises()
+
+    const headers = wrapper
+      .findAll('[data-testid="metrics-table"] thead th')
+      .map((th) => th.text())
+    expect(headers).toContain('p‑value') // non-breaking hyphen
+    // returned_1d row should show a significant p-value (we engineered a huge gap).
+    expect(wrapper.get('[data-testid="metrics-table"]').text()).toContain('<0.001')
+  })
+
+  it('does not show a p-value column in non-experiment group-by modes', async () => {
+    fetchFileListMock.mockResolvedValue(['events-a.parquet'])
+    fetchEventsMock.mockResolvedValue(sampleEvents)
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.get('[data-testid="group-by"]').setValue('countryAgg')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="pvalue-header"]').exists()).toBe(false)
   })
 
   it('renders the retention metrics table with per-player counts and rates', async () => {
