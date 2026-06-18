@@ -31,25 +31,23 @@ export function fetchEvents(
 ): Promise<PlayerEvent[]> {
   return new Promise((resolve, reject) => {
     const worker = new LoadWorker()
-    // Pre-allocated once we receive `streamStart`; assembled in place.
-    let events: PlayerEvent[] | null = null
+    let events: PlayerEvent[] = []
     worker.onmessage = (e: MessageEvent<LoadOutbound>) => {
       const msg = e.data
       if (msg.type === 'progress') {
         onProgress({ phase: msg.phase, percent: msg.percent })
       } else if (msg.type === 'streamStart') {
-        events = new Array<PlayerEvent>(msg.total)
+        events = []
       } else if (msg.type === 'streamChunk') {
-        if (!events) {
-          reject(new Error('streamChunk arrived before streamStart'))
-          worker.terminate()
-          return
-        }
-        const { offset, events: chunk } = msg
-        for (let i = 0; i < chunk.length; i++) events[offset + i] = chunk[i]
+        // Pre-grow the array, then write each event into the new slots —
+        // cheaper than `push.apply` and safe for chunks of any size.
+        const start = events.length
+        const len = msg.events.length
+        events.length = start + len
+        for (let i = 0; i < len; i++) events[start + i] = msg.events[i]
       } else if (msg.type === 'streamEnd') {
         worker.terminate()
-        resolve(events ?? [])
+        resolve(events)
       } else if (msg.type === 'error') {
         worker.terminate()
         reject(new Error(msg.message))
