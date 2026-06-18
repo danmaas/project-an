@@ -25,13 +25,13 @@ import TimeSeriesChart from './components/TimeSeriesChart.vue'
 const title = 'Player Insights'
 const explainer = 'This is a demo of data analysis & visualization, making use of data from one of my side projects, a mobile puzzle game (https://badukpop.com). As a game developer, it is vital to understand the drivers of user behavior. What aspects of the app, and of user demographics, correlate with important business outcomes, like user retention and monetization?'
 + '\n\n' +
-'This demo loads anonymized event logs recorded by the game server. The "source" dropdown selects a dataset ("events-202605-full" is the largest and most useful one). The "Filter Players" panel allows separate viewing of behavior by demographics (e.g. country and device platform).'
+'This demo loads anonymized event logs recorded by the game server. The raw data consists of millions of events, including each time a user navigated in the game UI, started a puzzle, or entered a purchase flow. The "source" dropdown selects a dataset to load ("events-202605-full" is the largest and most useful one; ~60MB download. If download is too slow, try the smaller "events-202605-us"). The "Filter Players" panel allows viewing a subset of the data by demographics (e.g. country and device platform).'
 + '\n\n' +
-'The "Metrics" panel displays the key business metrics for the selected users. "returned_Nd" is the fraction of players who kept using the app after N days, and "sub_buy_success" represents players who activated a paid subscription.'
+'The "Metrics" panel displays the key business metrics for the selected users. "returned_Nd" is the fraction of players who kept using the app after N days, and "sub_buy_success" represents players who activated a paid subscription. Naturally, higher is better for these metrics.'
 + '\n\n' +
-'This tool can analyze the outcome of A/B test experiments. For example, use the "group by" control to select "experiment / sub_sku_annual_only". This experiment bucketed users into two groups, where the "off" group could choose either a monthly or annual subscription, while the "on" group was only offered an annual subscription. The tool calculates the statistical significance of differences in business metrics by test cohort. You should be able to see that the "on" group was significantly more or less likely to purchase a paid subscription, with directionally different outcomes in different countries.'
+'This tool can analyze the impact of A/B test experiments. For example, use the "group by" control to select "experiment / sub_sku_annual_only". This experiment bucketed users into two groups, where the "off" group could choose either a monthly or annual subscription, while the "on" group was only offered an annual subscription. The tool calculates the statistical significance of differences in business metrics by test cohort. You should be able to see that the "on" group was significantly more or less likely to purchase a paid subscription, with directionally different outcomes in different countries.'
 + '\n\n' +
-'Implementation notes: Data is streamed to the browser in Parquet format, and all analysis is performed client-side. Futher details at https://github.com/danmaas/project-an/blob/main/AGENTS.md'
+'Implementation notes: Data is streamed to the browser in Parquet format, and all analysis is performed client-side. Futher details in the code repo at https://github.com/danmaas/project-an'
 
 const files = ref<string[]>([])
 const selectedFile = ref('')
