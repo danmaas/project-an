@@ -185,6 +185,23 @@ test('loads the medium dataset without freezing the UI, showing a progress bar',
   await expect(nCell).toHaveText(/^\d{1,3}(,\d{3})+$/)
 })
 
+test('loads the 6M-row "most" dataset via chunked streaming', async ({ page }) => {
+  // The most-sized dataset blew past the structured-clone size cap when the
+  // worker tried to postMessage the full PlayerEvent[] in one shot. With
+  // chunked streaming the per-message clone stays small (~25 MB) and the
+  // 6M-row dataset assembles cleanly on the main thread.
+  await page.goto('/')
+  await expect(page.getByTestId('metrics-table')).toBeVisible({ timeout: 30_000 })
+
+  await page.getByTestId('source-select').selectOption('events-202605-most.parquet')
+  await expect(page.getByTestId('load-progress')).toBeVisible({ timeout: 5_000 })
+  await expect(page.getByTestId('load-progress')).toBeHidden({ timeout: 180_000 })
+
+  await expect(page.locator('.status-error')).toHaveCount(0)
+  const nCell = page.locator('[data-testid="metrics-table"] tr.row-n td').first()
+  await expect(nCell).toHaveText(/^\d{2,3}(,\d{3})+$/) // tens of thousands of players
+})
+
 test('exposes a /healthz endpoint that returns 200 OK', async ({ request }) => {
   const response = await request.get('/healthz')
   expect(response.status()).toBe(200)

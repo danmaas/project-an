@@ -10,9 +10,19 @@ import type { PlayerEvent } from '../types'
 
 export type LoadInbound = { type: 'load'; filename: string }
 
+/**
+ * The worker streams the assembled event log back to the main thread in
+ * chunks rather than as a single huge array. A monolithic `postMessage`
+ * structured-clone of, say, 6M PlayerEvents exceeds the browser's per-message
+ * clone budget and throws "Data cannot be cloned, out of memory"; chunking
+ * keeps each individual clone small (~tens of MB) so even multi-GB total
+ * payloads can be transferred.
+ */
 export type LoadOutbound =
   | { type: 'progress'; phase: string; percent: number }
-  | { type: 'done'; events: PlayerEvent[] }
+  | { type: 'streamStart'; total: number }
+  | { type: 'streamChunk'; offset: number; events: PlayerEvent[] }
+  | { type: 'streamEnd' }
   | { type: 'error'; message: string }
 
 // Convenience to keep the discriminated union honest in TS.
@@ -99,8 +109,24 @@ self.onmessage = async (event: MessageEvent<LoadInbound>) => {
     post({ type: 'progress', phase: 'synthesizing retention events', percent: 88 })
     const withSynthetic = synthesizeRetentionEvents(events)
 
-    post({ type: 'progress', phase: 'ready', percent: 100 })
-    post({ type: 'done', events: withSynthetic })
+    // Stream to the main thread in chunks. Each chunk is independently
+    // structured-cloned, so the per-message cap doesn't matter — only the
+    // chunk size does.
+    const STREAM_CHUNK = 100_000
+    const finalTotal = withSynthetic.length
+    post({ type: 'streamStart', total: finalTotal })
+    for (let off = 0; off < finalTotal; off += STREAM_CHUNK) {
+      const end = Math.min(off + STREAM_CHUNK, finalTotal)
+      const slice = withSynthetic.slice(off, end)
+      post({ type: 'streamChunk', offset: off, events: slice })
+      // Release the items we just sent so the worker's peak memory doesn't
+      // double during streaming. (The slice was copied for the postMessage
+      // clone; the originals are no longer needed.)
+      withSynthetic.fill(undefined as unknown as PlayerEvent, off, end)
+      const pct = 90 + Math.floor((end / finalTotal) * 10)
+      post({ type: 'progress', phase: 'transferring', percent: pct })
+    }
+    post({ type: 'streamEnd' })
   } catch (err) {
     post({ type: 'error', message: err instanceof Error ? err.message : String(err) })
   }
