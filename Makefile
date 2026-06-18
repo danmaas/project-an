@@ -14,8 +14,8 @@ AWS_REGION      ?= us-east-1
 ECR_REGISTRY    ?= 043633525143.dkr.ecr.us-east-1.amazonaws.com
 ECR_REPO        ?= $(ECR_REGISTRY)/project-an
 ECR_TAG         ?= latest
-ECS_SERVICE_ARN ?= arn:aws:ecs:us-east-1:043633525143:service/default/project-an
-ECS_CONTAINER_PORT ?= 8000
+ECS_CLUSTER     ?= project-an
+ECS_SERVICE     ?= project-an
 
 help:
 	@echo "Common targets:"
@@ -63,10 +63,11 @@ push-bundled: build-bundled
 	  | docker login --username AWS --password-stdin $(ECR_REGISTRY)
 	docker tag $(BUNDLED_IMAGE_NAME):latest $(ECR_REPO):$(ECR_TAG)
 	docker push $(ECR_REPO):$(ECR_TAG)
-	aws ecs update-express-gateway-service \
+	aws ecs update-service \
 	  --region $(AWS_REGION) \
-	  --service-arn "$(ECS_SERVICE_ARN)" \
-	  --primary-container image=$(ECR_REPO):$(ECR_TAG),containerPort=$(ECS_CONTAINER_PORT)
+	  --cluster "$(ECS_CLUSTER)" \
+	  --service "$(ECS_SERVICE)" \
+	  --force-new-deployment
 
 run: build
 	@( \
