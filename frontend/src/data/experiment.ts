@@ -31,14 +31,14 @@ export function computeVariationAssignments(
 ): Map<string, string> {
   // Track the earliest non-control variation per player.
   const earliest = new Map<string, { variationId: string; ts: number }>()
-  for (const e of events) {
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i]
     if (e.event !== 'experiment_viewed') continue
     if (e.experimentId !== experimentId) continue
     if (!e.variationId || e.variationId === 'control') continue
-    const ts = e.ts.getTime()
     const cur = earliest.get(e.userIdHash)
-    if (!cur || ts < cur.ts) {
-      earliest.set(e.userIdHash, { variationId: e.variationId, ts })
+    if (!cur || e.ts < cur.ts) {
+      earliest.set(e.userIdHash, { variationId: e.variationId, ts: e.ts })
     }
   }
   // Strip metadata.

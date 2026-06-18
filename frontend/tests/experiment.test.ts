@@ -9,13 +9,13 @@ import type { PlayerEvent } from '../src/types'
 
 function makeEvent(opts: Partial<PlayerEvent> & { event: string; userIdHash: string }): PlayerEvent {
   return {
-    ts: new Date('2026-05-01T10:00:00Z'),
+    ts: new Date('2026-05-01T10:00:00Z').getTime(),
     event: opts.event,
     userIdHash: opts.userIdHash,
-    userCreateTime: new Date('2026-04-27T00:00:00Z'),
+    userCreateTime: new Date('2026-04-27T00:00:00Z').getTime(),
     countryAgg: 'ENG',
     platform: 'ios',
-    joinWeek: new Date('2026-04-27T00:00:00Z'),
+    joinWeek: new Date('2026-04-27T00:00:00Z').getTime(),
     experimentId: '',
     variationId: '',
     ...opts,
@@ -33,7 +33,7 @@ const view = (
     userIdHash,
     experimentId,
     variationId,
-    ts: new Date(iso),
+    ts: new Date(iso).getTime(),
   })
 
 describe('experimentIdFromGroupBy', () => {

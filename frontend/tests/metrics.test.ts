@@ -22,10 +22,10 @@ function build(players: PlayerSpec[]): PlayerEvent[] {
     const id = p.id ?? userId()
     const countryAgg = p.countryAgg ?? 'ENG'
     const platform = p.platform ?? 'ios'
-    const joinWeek = new Date(`${p.joinWeek ?? '2026-04-27'}T00:00:00Z`)
+    const joinWeek = new Date(`${p.joinWeek ?? '2026-04-27'}T00:00:00Z`).getTime()
     for (const ev of p.events) {
       out.push({
-        ts: new Date('2026-05-01T10:00:00Z'),
+        ts: new Date('2026-05-01T10:00:00Z').getTime(),
         event: ev,
         userIdHash: id,
         userCreateTime: joinWeek,

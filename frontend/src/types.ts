@@ -1,13 +1,17 @@
 // Subset of the event-log schema we currently care about.
 // The full schema includes user_id_hash, screen_name, experiment_id,
 // variation_id — we'll wire those in for later tasks.
+// Timestamps are ms since epoch (number, not Date). For a multi-million-row
+// event log this saves enormous amounts of memory vs Date objects and
+// eliminates per-event Date allocation in hot aggregation paths. Dates are
+// reconstructed only when needed (e.g. at the chart's data boundary).
 export interface PlayerEvent {
-  ts: Date
+  ts: number
   event: string
   /** Stable player identifier — the `user_id_hash` column in the Parquet. */
   userIdHash: string
-  /** When the player's account was created (UTC). */
-  userCreateTime: Date
+  /** When the player's account was created (UTC, ms since epoch). */
+  userCreateTime: number
   /**
    * Aggregated country class (see `data/country.ts`) — e.g. `ENG`, `kr`, `EUR`,
    * `Other`. Deliberately NOT named `country` so it can't be confused with the
@@ -15,7 +19,8 @@ export interface PlayerEvent {
    */
   countryAgg: string
   platform: string
-  joinWeek: Date
+  /** UTC ms since epoch; quantized to the nearest week (constant per player). */
+  joinWeek: number
   /** Populated only when `event === 'experiment_viewed'`; '' otherwise. */
   experimentId: string
   /** Populated only when `event === 'experiment_viewed'`; '' otherwise. */

@@ -13,7 +13,7 @@ import { experimentIdFromGroupBy } from './experiment'
 interface PlayerAttrs {
   countryAgg: string
   platform: string
-  joinWeek: Date
+  joinWeek: number
 }
 
 /**

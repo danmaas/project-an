@@ -16,15 +16,15 @@ interface EventSpec {
 
 function build(userIdHash: string, specs: EventSpec[]): PlayerEvent[] {
   return specs.map(({ event, at }) => {
-    const ts = typeof at === 'number' ? new Date(CREATE_MS + at) : new Date(at)
+    const ts = typeof at === 'number' ? CREATE_MS + at : new Date(at).getTime()
     return {
       ts,
       event,
       userIdHash,
-      userCreateTime: new Date(CREATE_ISO),
+      userCreateTime: new Date(CREATE_ISO).getTime(),
       countryAgg: 'ENG',
       platform: 'ios',
-      joinWeek: new Date('2026-04-27T00:00:00Z'),
+      joinWeek: new Date('2026-04-27T00:00:00Z').getTime(),
       experimentId: '',
       variationId: '',
     }
@@ -126,14 +126,14 @@ describe('synthesizeRetentionEvents', () => {
     // Tweak attributes to a non-default set so we can verify they propagate.
     input[0].countryAgg = 'jp'
     input[0].platform = 'android'
-    input[0].joinWeek = new Date('2026-05-04T00:00:00Z')
+    input[0].joinWeek = new Date('2026-05-04T00:00:00Z').getTime()
     const result = synthesizeRetentionEvents(input)
     const synth = result.find((e) => e.event === 'returned_2d')!
     expect(synth.userIdHash).toBe('p1')
     expect(synth.countryAgg).toBe('jp')
     expect(synth.platform).toBe('android')
-    expect(synth.joinWeek.toISOString()).toBe('2026-05-04T00:00:00.000Z')
-    expect(synth.userCreateTime.toISOString()).toBe(CREATE_ISO.replace('Z', '.000Z'))
+    expect(synth.joinWeek).toBe(new Date('2026-05-04T00:00:00Z').getTime())
+    expect(synth.userCreateTime).toBe(CREATE_MS)
   })
 
   it('uses the ts of the first qualifying screen event for the synthetic event', () => {
@@ -143,7 +143,7 @@ describe('synthesizeRetentionEvents', () => {
     ])
     const result = synthesizeRetentionEvents(input)
     const synth = result.find((e) => e.event === 'returned_3d')!
-    expect(synth.ts.getTime()).toBe(CREATE_MS + 3 * DAY_MS + 9 * 3600_000)
+    expect(synth.ts).toBe(CREATE_MS + 3 * DAY_MS + 9 * 3600_000)
   })
 
   it('returns a new array without mutating the input', () => {

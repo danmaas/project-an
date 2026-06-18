@@ -23,13 +23,13 @@ function ev(
   variationId = '',
 ): PlayerEvent {
   return {
-    ts: new Date(iso),
+    ts: new Date(iso).getTime(),
     event,
     userIdHash,
-    userCreateTime: new Date(`${joinWeek}T00:00:00Z`),
+    userCreateTime: new Date(`${joinWeek}T00:00:00Z`).getTime(),
     countryAgg,
     platform,
-    joinWeek: new Date(`${joinWeek}T00:00:00Z`),
+    joinWeek: new Date(`${joinWeek}T00:00:00Z`).getTime(),
     experimentId,
     variationId,
   }
@@ -64,7 +64,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await flushPromises()
 
-    expect(fetchEventsMock).toHaveBeenCalledWith('events-a.parquet')
+    expect(fetchEventsMock).toHaveBeenCalledWith('events-a.parquet', expect.any(Function))
     const source = wrapper.get('[data-testid="source-select"]')
     expect(source.findAll('option').map((o) => o.text())).toEqual(['events-a', 'events-b'])
   })

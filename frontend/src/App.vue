@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { fetchEvents, fetchFileList } from './data/parquet'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { fetchEvents, fetchFileList, type LoadProgress } from './data/parquet'
 import { applyFilters, screenEventsByHour, uniqueJoinWeeks } from './data/aggregate'
 import {
   computeVariationAssignments,
@@ -9,13 +9,17 @@ import {
 } from './data/experiment'
 import { chiSquareForMetric, computeRetentionMetrics } from './data/metrics'
 import type { ChiSquareResult } from './data/chisquare'
-import { RETENTION_EVENTS, type RetentionEvent } from './types'
-import { synthesizeRetentionEvents } from './data/synthesize'
-import { EMPTY_FILTERS, type Filters, type GroupBy, type PlayerEvent } from './types'
-// Note: RETENTION_EVENTS / RetentionEvent / ChiSquareResult imported above
-// near the metrics imports to keep related code together.
+import {
+  EMPTY_FILTERS,
+  RETENTION_EVENTS,
+  type Filters,
+  type GroupBy,
+  type PlayerEvent,
+  type RetentionEvent,
+} from './types'
 import FilterPanel from './components/FilterPanel.vue'
 import MetricsTable from './components/MetricsTable.vue'
+import ProgressBar from './components/ProgressBar.vue'
 import TimeSeriesChart from './components/TimeSeriesChart.vue'
 
 const title = 'Player Insights'
@@ -23,8 +27,12 @@ const subtitle = 'Hourly screen-event traffic'
 
 const files = ref<string[]>([])
 const selectedFile = ref('')
-const events = ref<PlayerEvent[]>([])
+// shallowRef intentionally: the events array can be millions of rows long.
+// We never mutate individual rows reactively, so deep-proxying every event
+// would be wasted work (and a memory disaster on the larger datasets).
+const events = shallowRef<PlayerEvent[]>([])
 const status = ref<'loading' | 'ready' | 'error'>('loading')
+const progress = ref<LoadProgress | null>(null)
 const errorMessage = ref('')
 
 const filters = ref<Filters>({ ...EMPTY_FILTERS })
@@ -33,9 +41,6 @@ const groupBy = ref<GroupBy>(null)
 const availableJoinWeeks = computed(() => uniqueJoinWeeks(events.value))
 const availableExperimentIds = computed(() => uniqueExperimentIds(events.value))
 
-// Experiment-analysis mode: when group-by is `experiment:<id>`, compute each
-// player's first non-control variation_id for that experiment. Used both as a
-// player-level filter and as the chart/metrics group key.
 const variationAssignments = computed(() => {
   const id = experimentIdFromGroupBy(groupBy.value)
   return id ? computeVariationAssignments(events.value, id) : null
@@ -48,9 +53,6 @@ const screenBuckets = computed(() =>
   screenEventsByHour(filteredEvents.value, groupBy.value, variationAssignments.value),
 )
 const totalEvents = computed(() => screenBuckets.value.reduce((sum, b) => sum + b.count, 0))
-// Retention metrics are computed over the unfiltered events, applying the
-// filter at the player level inside computeRetentionMetrics. This is more
-// efficient than re-filtering events for every metric.
 const retentionMetrics = computed(() =>
   computeRetentionMetrics(
     events.value,
@@ -60,8 +62,6 @@ const retentionMetrics = computed(() =>
   ),
 )
 
-// Chi-square test of independence is only meaningful in experiment-analysis
-// mode (TASK-510), and only when there are ≥2 variations to compare.
 const chiSquareResults = computed<Record<RetentionEvent, ChiSquareResult | null> | null>(
   () => {
     if (!variationAssignments.value) return null
@@ -96,17 +96,18 @@ onMounted(async () => {
 watch(selectedFile, async (filename) => {
   if (!filename) return
   status.value = 'loading'
+  progress.value = { phase: 'starting', percent: 0 }
   errorMessage.value = ''
-  // Reset filter/group-by when switching files; available join-weeks change.
   filters.value = { ...EMPTY_FILTERS }
   groupBy.value = null
   try {
-    const raw = await fetchEvents(filename)
-    // `returned_Nd` events are not present in the raw log — synthesize them
-    // from `screen` events in the appropriate windows after account creation.
-    events.value = synthesizeRetentionEvents(raw)
+    events.value = await fetchEvents(filename, (p) => {
+      progress.value = p
+    })
+    progress.value = null
     status.value = 'ready'
   } catch (err) {
+    progress.value = null
     status.value = 'error'
     errorMessage.value = err instanceof Error ? err.message : String(err)
   }
@@ -143,11 +144,16 @@ watch(selectedFile, async (filename) => {
     />
 
     <section class="chart-wrap" aria-live="polite">
-      <p v-if="status === 'loading'" class="status">Loading event log…</p>
+      <ProgressBar
+        v-if="status === 'loading' && progress"
+        data-testid="load-progress"
+        :percent="progress.percent"
+        :label="progress.phase"
+      />
       <p v-else-if="status === 'error'" class="status status-error">
         Failed to load data: {{ errorMessage }}
       </p>
-      <template v-else>
+      <template v-else-if="status === 'ready'">
         <TimeSeriesChart :data="screenBuckets" y-label="screen events / hour" />
         <p class="caption">
           {{ totalEvents.toLocaleString() }} screen events,

@@ -1,9 +1,20 @@
 import type { Filters, GroupBy, HourlyBucket, PlayerEvent } from '../types'
 import { experimentIdFromGroupBy } from './experiment'
 
-/** ISO date string ("YYYY-MM-DD") in UTC, used as a stable key for join-week. */
-export function joinWeekKey(d: Date): string {
-  return d.toISOString().slice(0, 10)
+const HOUR_MS = 3_600_000
+
+// Memoized formatter for join-week keys. There are at most ~5 distinct values
+// per month-long file, so the cache pays for itself many times over (called
+// per event in applyFilters and aggregation paths).
+const joinWeekKeyCache = new Map<number, string>()
+
+/** ISO date string ("YYYY-MM-DD") in UTC for a join-week timestamp in ms. */
+export function joinWeekKey(ms: number): string {
+  let s = joinWeekKeyCache.get(ms)
+  if (s !== undefined) return s
+  s = new Date(ms).toISOString().slice(0, 10)
+  joinWeekKeyCache.set(ms, s)
+  return s
 }
 
 /**
@@ -33,30 +44,40 @@ export function applyFilters(
 /**
  * Bucket events by UTC hour, optionally split by a group-by dimension.
  *
+ * Hot path: uses a nested Map<group, Map<hourMs, count>> so each event does
+ * two cheap Map lookups instead of building a temporary composite string key.
+ *
  * When the group-by is an experiment, `variationAssignments` is required to
- * resolve each player's variation_id; pass the same map that was used to
- * pre-filter via `applyFilters`.
+ * resolve each player's variation_id.
  */
 export function bucketByHour(
   events: PlayerEvent[],
   groupBy: GroupBy = null,
   variationAssignments?: Map<string, string> | null,
 ): HourlyBucket[] {
-  // Keyed by "<group>\x00<hour-ms>" so a single Map handles both grouped and
-  // ungrouped aggregation without separate code paths.
-  const counts = new Map<string, number>()
-  for (const e of events) {
-    const hour = floorToHour(e.ts).getTime()
-    const group = groupKeyFor(e, groupBy, variationAssignments)
-    const key = `${group}\x00${hour}`
-    counts.set(key, (counts.get(key) ?? 0) + 1)
+  const isGrouping = groupBy !== null
+  const counts = new Map<string, Map<number, number>>()
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i]
+    const hourMs = Math.floor(e.ts / HOUR_MS) * HOUR_MS
+    const g = groupKeyFor(e, groupBy, variationAssignments)
+    let inner = counts.get(g)
+    if (!inner) {
+      inner = new Map<number, number>()
+      counts.set(g, inner)
+    }
+    inner.set(hourMs, (inner.get(hourMs) ?? 0) + 1)
   }
+
   const buckets: HourlyBucket[] = []
-  for (const [key, count] of counts) {
-    const sep = key.indexOf('\x00')
-    const group = key.slice(0, sep)
-    const hour = new Date(Number(key.slice(sep + 1)))
-    buckets.push(groupBy ? { hour, count, group } : { hour, count })
+  for (const [g, inner] of counts) {
+    for (const [hourMs, count] of inner) {
+      buckets.push(
+        isGrouping
+          ? { hour: new Date(hourMs), count, group: g }
+          : { hour: new Date(hourMs), count },
+      )
+    }
   }
   return buckets.sort((a, b) => {
     const t = a.hour.getTime() - b.hour.getTime()
@@ -81,7 +102,7 @@ export function screenEventsByHour(
 /** Collect the distinct join_week keys present in the data, sorted ascending. */
 export function uniqueJoinWeeks(events: PlayerEvent[]): string[] {
   const set = new Set<string>()
-  for (const e of events) set.add(joinWeekKey(e.joinWeek))
+  for (let i = 0; i < events.length; i++) set.add(joinWeekKey(events[i].joinWeek))
   return [...set].sort()
 }
 
@@ -97,10 +118,4 @@ function groupKeyFor(
     return variationAssignments?.get(e.userIdHash) ?? ''
   }
   return ''
-}
-
-function floorToHour(d: Date): Date {
-  const out = new Date(d)
-  out.setUTCMinutes(0, 0, 0)
-  return out
 }

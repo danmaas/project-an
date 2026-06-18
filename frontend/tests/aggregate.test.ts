@@ -15,13 +15,13 @@ const e = (
   platform = 'ios',
   joinWeek = '2026-04-27',
 ): PlayerEvent => ({
-  ts: new Date(iso),
+  ts: new Date(iso).getTime(),
   event,
   userIdHash: 'u0',
-  userCreateTime: new Date(`${joinWeek}T00:00:00Z`),
+  userCreateTime: new Date(`${joinWeek}T00:00:00Z`).getTime(),
   countryAgg,
   platform,
-  joinWeek: new Date(`${joinWeek}T00:00:00Z`),
+  joinWeek: new Date(`${joinWeek}T00:00:00Z`).getTime(),
   experimentId: '',
   variationId: '',
 })
@@ -194,13 +194,13 @@ describe('experiment-mode grouping', () => {
     event: string,
     userIdHash: string,
   ): PlayerEvent => ({
-    ts: new Date(iso),
+    ts: new Date(iso).getTime(),
     event,
     userIdHash,
-    userCreateTime: new Date('2026-04-27T00:00:00Z'),
+    userCreateTime: new Date('2026-04-27T00:00:00Z').getTime(),
     countryAgg: 'ENG',
     platform: 'ios',
-    joinWeek: new Date('2026-04-27T00:00:00Z'),
+    joinWeek: new Date('2026-04-27T00:00:00Z').getTime(),
     experimentId: '',
     variationId: '',
   })

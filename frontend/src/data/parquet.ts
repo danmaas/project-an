@@ -1,6 +1,12 @@
-import { asyncBufferFromUrl, parquetReadObjects } from 'hyparquet'
+import LoadWorker from '../workers/load.worker?worker'
+import type { LoadOutbound } from '../workers/load.worker'
 import type { PlayerEvent } from '../types'
-import { classifyCountry } from './country'
+
+/** Progress information emitted while a parquet file is being loaded. */
+export interface LoadProgress {
+  phase: string
+  percent: number
+}
 
 /** List the available event-log Parquet files in the backend's data directory. */
 export async function fetchFileList(): Promise<string[]> {
@@ -12,50 +18,33 @@ export async function fetchFileList(): Promise<string[]> {
   return body.files ?? []
 }
 
-/** Fetch a Parquet file from the backend and decode just the columns we need. */
-export async function fetchEvents(filename: string): Promise<PlayerEvent[]> {
-  const url = `/api/data/${filename}`
-  const file = await asyncBufferFromUrl({ url })
-  const rows = (await parquetReadObjects({
-    file,
-    columns: [
-      'ts',
-      'event',
-      'user_id_hash',
-      'user_create_time',
-      'country',
-      'platform',
-      'join_week',
-      'experiment_id',
-      'variation_id',
-    ],
-  })) as Array<Record<string, unknown>>
-  return rows.map((r) => ({
-    ts: toDate(r.ts),
-    event: String(r.event),
-    userIdHash: String(r.user_id_hash ?? ''),
-    userCreateTime: toDate(r.user_create_time),
-    countryAgg: classifyCountry(r.country == null ? null : String(r.country)),
-    platform: String(r.platform ?? ''),
-    joinWeek: toDate(r.join_week),
-    experimentId: r.experiment_id == null ? '' : String(r.experiment_id),
-    variationId: r.variation_id == null ? '' : String(r.variation_id),
-  }))
-}
-
-// Parquet TIMESTAMP_NS values are returned as bigint nanoseconds since epoch by
-// hyparquet (Date can't represent that precision); TIMESTAMP_MICROS and
-// TIMESTAMP_MILLIS may come through as Date or bigint depending on the file.
-// We accept all four shapes and normalize to Date.
-export function toDate(value: unknown): Date {
-  if (value instanceof Date) return value
-  if (typeof value === 'bigint') {
-    const n = Number(value)
-    // Magnitude check: a 2026 timestamp is ~1.78e12 ms, ~1.78e15 µs, ~1.78e18 ns.
-    if (n < 1e13) return new Date(n)
-    if (n < 1e16) return new Date(n / 1e3)
-    return new Date(n / 1e6)
-  }
-  if (typeof value === 'number') return new Date(value)
-  return new Date(String(value))
+/**
+ * Load a Parquet event log on a background thread. The worker handles the
+ * (potentially seconds-long) decode + normalize + synthesize work, posting
+ * progress messages so the main thread can drive a progress bar.
+ */
+export function fetchEvents(
+  filename: string,
+  onProgress: (p: LoadProgress) => void = () => {},
+): Promise<PlayerEvent[]> {
+  return new Promise((resolve, reject) => {
+    const worker = new LoadWorker()
+    worker.onmessage = (e: MessageEvent<LoadOutbound>) => {
+      const msg = e.data
+      if (msg.type === 'progress') {
+        onProgress({ phase: msg.phase, percent: msg.percent })
+      } else if (msg.type === 'done') {
+        worker.terminate()
+        resolve(msg.events)
+      } else if (msg.type === 'error') {
+        worker.terminate()
+        reject(new Error(msg.message))
+      }
+    }
+    worker.onerror = (e) => {
+      worker.terminate()
+      reject(new Error(`Worker error: ${e.message || 'unknown'}`))
+    }
+    worker.postMessage({ type: 'load', filename })
+  })
 }

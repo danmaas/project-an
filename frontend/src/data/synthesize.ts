@@ -19,11 +19,12 @@ export function synthesizeRetentionEvents(events: PlayerEvent[]): PlayerEvent[] 
   const emitted = new Map<string, Set<number>>()
   const synthetic: PlayerEvent[] = []
 
-  for (const e of events) {
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i]
     if (e.event !== 'screen') continue
     if (!e.userIdHash) continue
 
-    const offsetMs = e.ts.getTime() - e.userCreateTime.getTime()
+    const offsetMs = e.ts - e.userCreateTime
     if (offsetMs < 0) continue
     const n = Math.floor(offsetMs / DAY_MS)
     if (!RETENTION_DAYS.has(n)) continue
@@ -44,6 +45,8 @@ export function synthesizeRetentionEvents(events: PlayerEvent[]): PlayerEvent[] 
       countryAgg: e.countryAgg,
       platform: e.platform,
       joinWeek: e.joinWeek,
+      experimentId: '',
+      variationId: '',
     })
   }
 

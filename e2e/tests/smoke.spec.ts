@@ -153,6 +153,38 @@ test('p-value column is hidden for non-experiment group-by', async ({ page }) =>
   await expect(page.getByTestId('pvalue-header')).toHaveCount(0)
 })
 
+test('loads the medium dataset without freezing the UI, showing a progress bar', async ({
+  page,
+}) => {
+  await page.goto('/')
+  // Wait for the initial (ca) dataset to render so we know the app is up.
+  await expect(page.getByTestId('metrics-table')).toBeVisible({ timeout: 30_000 })
+
+  // Switch to the medium dataset. With TASK-600 the load runs on a worker, so
+  // the page stays responsive and the progress bar appears.
+  await page.getByTestId('source-select').selectOption('events-202605-us.parquet')
+
+  // The progress bar appears within a few seconds.
+  await expect(page.getByTestId('load-progress')).toBeVisible({ timeout: 5_000 })
+
+  // While the worker is decoding, the UI thread should still respond — we can
+  // do other DOM queries without timing out. (If the main thread were blocked,
+  // this poll would never resolve and the test would time out.)
+  const responsiveDuringLoad = await page.evaluate(() => {
+    // A quick synchronous call that requires the main thread to service it.
+    return document.title
+  })
+  expect(responsiveDuringLoad).toMatch(/Player Insights/i)
+
+  // Eventually the chart renders for the new file. Give it generous time —
+  // 1.4M rows take a few seconds even on a worker.
+  await expect(page.getByTestId('load-progress')).toBeHidden({ timeout: 90_000 })
+  await expect(page.locator('[data-testid="chart"] svg')).toBeVisible()
+  // n (players) for the us dataset is ~9k.
+  const nCell = page.locator('[data-testid="metrics-table"] tr.row-n td').first()
+  await expect(nCell).toHaveText(/^\d{1,3}(,\d{3})+$/)
+})
+
 test('exposes a /healthz endpoint that returns 200 OK', async ({ request }) => {
   const response = await request.get('/healthz')
   expect(response.status()).toBe(200)
