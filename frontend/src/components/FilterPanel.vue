@@ -30,6 +30,7 @@ const isGrouped = computed(() => ({
 </script>
 
 <template>
+  <h2 class="section-label" data-testid="filter-panel-label">Filter Players</h2>
   <div class="filter-panel">
     <label class="control">
       <span class="control-label">country</span>
@@ -101,12 +102,20 @@ const isGrouped = computed(() => ({
 </template>
 
 <style scoped>
+.section-label {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.1rem;
+  color: var(--ink-muted);
+  margin: 1.5rem 0 0.4rem;
+}
+
 .filter-panel {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.5rem 1.25rem;
-  margin: 0.75rem 0 1.5rem;
+  margin: 0 0 1.5rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--rule);
   font-family: var(--font-serif);

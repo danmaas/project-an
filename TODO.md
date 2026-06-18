@@ -31,8 +31,12 @@ This file tracks the state of tasks that are TODO / INPROGRESS / DONE. Please ke
   - **Load times (Chrome, local Docker)**: ca (178k rows) <1 s · us (1.4M) 1.6 s · most (6M, 31k players) 5.1 s · full (10.5M, 64k players) 9.2 s — none freeze the UI, all show progress, none crash.
 
 - TASK-700 [TODO]: Misc visual polish.
-    - Delete "Hourly screen-event traffic" subtitle
+    - Delete "Hourly screen-event traffic" subtitle. Instead, add a larger textbox under "Player Insights" with room for a few short paragraphs of "explainer" text. For now, fill that box with a copy of the first paragraph under "Design" in AGENTS.md.
     - On time-series chart, change "screen events / hour" text -> "activity"
     - Move the time-series legend below the chart instead of above it.
     - When "group by" is active, can we make the legend clickable, such that when the user clicks on a dimension legend label, the other values for that dimension temporarily toggle hidden? Similar to the behavior of Grafana time-series charts.
     - Make the UI expand horizontally, responsive to the browser width.
+
+- TASK-800 [TODO]: Self-contained packaging
+    - Create a new make target that constructs a fully self-contained container that bakes  the contents of the local data/ directory into the container's /data, instead of expecting it to be mounted at runtime
+    - Create another new make target, dependent on the previous one, that then pushes this "baked" container to the ECR registry at `043633525143.dkr.ecr.us-east-1.amazonaws.com/project-an`. Assume AWS credentials exist in the environment such that `aws ecr get-login-password` will work.

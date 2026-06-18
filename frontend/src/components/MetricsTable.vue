@@ -43,6 +43,9 @@ const metricKeys = RETENTION_EVENTS as readonly RetentionEvent[]
 
 <template>
   <figure class="metrics" data-testid="metrics-table">
+    <h2 class="section-label" data-testid="metrics-table-label">
+      Metrics
+    </h2>
     <table>
       <thead>
         <tr>
@@ -100,6 +103,14 @@ const metricKeys = RETENTION_EVENTS as readonly RetentionEvent[]
   font-family: var(--font-serif);
 }
 
+.section-label {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.1rem;
+  color: var(--ink-muted);
+  margin: 0 0 0.5rem;
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
@@ -126,7 +137,6 @@ thead th.pvalue-col {
 
 tbody th {
   font-weight: 400;
-  font-style: italic;
   color: var(--ink-muted);
   text-align: left;
   padding: 0.35rem 0.75rem;

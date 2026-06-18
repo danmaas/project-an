@@ -23,7 +23,15 @@ import ProgressBar from './components/ProgressBar.vue'
 import TimeSeriesChart from './components/TimeSeriesChart.vue'
 
 const title = 'Player Insights'
-const subtitle = 'Hourly screen-event traffic'
+const explainer = 'This is a demo of data analysis & visualization, making use of data from one of my side projects, a mobile puzzle game (https://badukpop.com). As a game developer, it is vital to understand the drivers of user behavior. What aspects of the app, and of user demographics, correlate with important business outcomes, like user retention and monetization?'
++ '\n\n' +
+'This demo loads anonymized event logs recorded by the game server. The "source" dropdown selects a dataset ("events-202605-full" is the largest and most useful one). The "Filter Players" panel allows separate viewing of behavior by demographics (e.g. country and device platform).'
++ '\n\n' +
+'The "Metrics" panel displays the key business metrics for the selected users. "returned_Nd" is the fraction of players who kept using the app after N days, and "sub_buy_success" represents players who activated a paid subscription.'
++ '\n\n' +
+'This tool can analyze the outcome of A/B test experiments. For example, use the "group by" control to select "experiment / sub_sku_annual_only". This experiment bucketed users into two groups, where the "off" group could choose either a monthly or annual subscription, while the "on" group was only offered an annual subscription. The tool calculates the statistical significance of differences in business metrics by test cohort. You should be able to see that the "on" group was significantly more or less likely to purchase a paid subscription, with directionally different outcomes in different countries.'
++ '\n\n' +
+'Implementation notes: Data is streamed to the browser in Parquet format, and all analysis is performed client-side. Futher details at https://github.com/danmaas/project-an/blob/main/AGENTS.md'
 
 const files = ref<string[]>([])
 const selectedFile = ref('')
@@ -52,7 +60,6 @@ const filteredEvents = computed(() =>
 const screenBuckets = computed(() =>
   screenEventsByHour(filteredEvents.value, groupBy.value, variationAssignments.value),
 )
-const totalEvents = computed(() => screenBuckets.value.reduce((sum, b) => sum + b.count, 0))
 const retentionMetrics = computed(() =>
   computeRetentionMetrics(
     events.value,
@@ -77,6 +84,31 @@ const chiSquareResults = computed<Record<RetentionEvent, ChiSquareResult | null>
 function formatFilename(name: string): string {
   return name.replace(/\.parquet$/i, '')
 }
+
+// Parse the explainer string into paragraphs (\n\n-separated) and within each
+// paragraph split out https?:// URLs as separate "link" segments so the
+// template can render them as real <a> tags. URL matching stops at whitespace
+// or a closing paren so trailing punctuation like "(https://...)." doesn't
+// get swallowed into the href.
+interface ExplainerSegment {
+  type: 'text' | 'link'
+  text: string
+  href?: string
+}
+const URL_RE = /\bhttps?:\/\/[^\s)]+/g
+const explainerParagraphs = computed<ExplainerSegment[][]>(() => {
+  return explainer.split(/\n\n+/).map((para) => {
+    const segs: ExplainerSegment[] = []
+    let i = 0
+    for (const m of para.matchAll(URL_RE)) {
+      if (m.index! > i) segs.push({ type: 'text', text: para.slice(i, m.index) })
+      segs.push({ type: 'link', text: m[0], href: m[0] })
+      i = m.index! + m[0].length
+    }
+    if (i < para.length) segs.push({ type: 'text', text: para.slice(i) })
+    return segs
+  })
+})
 
 onMounted(async () => {
   try {
@@ -118,19 +150,30 @@ watch(selectedFile, async (filename) => {
   <article class="page">
     <header>
       <h1>{{ title }}</h1>
-      <div class="header-row">
-        <p class="subtitle">{{ subtitle }}</p>
-        <label class="source-control">
-          <span>source</span>
-          <select
-            v-model="selectedFile"
-            :disabled="files.length === 0"
-            data-testid="source-select"
-          >
-            <option v-for="f in files" :key="f" :value="f">{{ formatFilename(f) }}</option>
-          </select>
-        </label>
+      <div class="explainer" data-testid="explainer">
+        <p v-for="(para, i) in explainerParagraphs" :key="i">
+          <template v-for="(seg, j) in para" :key="j">
+            <a
+              v-if="seg.type === 'link'"
+              :href="seg.href"
+              target="_blank"
+              rel="noopener noreferrer"
+              >{{ seg.text }}</a
+            >
+            <template v-else>{{ seg.text }}</template>
+          </template>
+        </p>
       </div>
+      <label class="source-control">
+        <span>source</span>
+        <select
+          v-model="selectedFile"
+          :disabled="files.length === 0"
+          data-testid="source-select"
+        >
+          <option v-for="f in files" :key="f" :value="f">{{ formatFilename(f) }}</option>
+        </select>
+      </label>
     </header>
 
     <FilterPanel
@@ -154,11 +197,7 @@ watch(selectedFile, async (filename) => {
         Failed to load data: {{ errorMessage }}
       </p>
       <template v-else-if="status === 'ready'">
-        <TimeSeriesChart :data="screenBuckets" y-label="screen events / hour" />
-        <p class="caption">
-          {{ totalEvents.toLocaleString() }} screen events,
-          {{ screenBuckets.length }} hourly buckets.
-        </p>
+        <TimeSeriesChart :data="screenBuckets" title="Player activity" y-label="activity" />
         <MetricsTable :metrics="retentionMetrics" :chi-square="chiSquareResults" />
       </template>
     </section>
@@ -167,9 +206,10 @@ watch(selectedFile, async (filename) => {
 
 <style scoped>
 .page {
-  max-width: 56rem;
-  margin: 4rem auto;
-  padding: 0 1.5rem;
+  /* Responsive: fluid up to a large cap; comfortable padding on small screens. */
+  max-width: 96rem;
+  margin: 3rem auto;
+  padding: 0 clamp(1rem, 4vw, 3rem);
 }
 
 header {
@@ -184,11 +224,12 @@ h1 {
   font-size: 2.25rem;
   line-height: 1.15;
   letter-spacing: -0.01em;
-  margin: 0 0 0.5rem;
+  margin: 0;
   color: var(--ink);
 }
 
-.header-row {
+.title-row {
+  /* legacy class kept for any callers; not used in current template */
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -196,12 +237,32 @@ h1 {
   flex-wrap: wrap;
 }
 
-.subtitle {
+/* Explainer prose. Expands with the page width like the rest of the layout. */
+.explainer {
   font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 1.1rem;
-  color: var(--ink-muted);
-  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--ink);
+  margin: 1rem 0 0;
+}
+
+.explainer p {
+  margin: 0 0 0.9rem;
+}
+
+.explainer p:last-child {
+  margin-bottom: 0;
+}
+
+.explainer a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.explainer a:hover {
+  text-decoration-thickness: 2px;
 }
 
 .source-control {
@@ -212,6 +273,7 @@ h1 {
   font-style: italic;
   font-size: 0.95rem;
   color: var(--ink-muted);
+  margin-top: 1.25rem;
 }
 
 .source-control select {
@@ -251,12 +313,4 @@ h1 {
   color: #993333;
 }
 
-.caption {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 0.95rem;
-  color: var(--ink-muted);
-  margin: 0.75rem 0 0;
-  text-align: right;
-}
 </style>

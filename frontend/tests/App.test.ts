@@ -50,11 +50,14 @@ beforeEach(() => {
 })
 
 describe('App', () => {
-  it('renders the title and subtitle on initial mount', () => {
+  it('renders the title and explainer on initial mount', () => {
     fetchFileListMock.mockReturnValue(new Promise(() => {}))
     const wrapper = mount(App)
     expect(wrapper.text()).toContain('Player Insights')
-    expect(wrapper.text()).toContain('Hourly screen-event traffic')
+    // First sentence of the explainer paragraph (copied from AGENTS.md).
+    expect(wrapper.get('[data-testid="explainer"]').text()).toContain(
+      'demo',
+    )
   })
 
   it('lists available files in the source dropdown and loads the first one', async () => {
@@ -69,31 +72,23 @@ describe('App', () => {
     expect(source.findAll('option').map((o) => o.text())).toEqual(['events-a', 'events-b'])
   })
 
-  it('renders the caption with the unfiltered total once loaded', async () => {
+  it('applies a countryAgg filter and narrows the metrics-table player count', async () => {
     fetchFileListMock.mockResolvedValue(['events-a.parquet'])
     fetchEventsMock.mockResolvedValue(sampleEvents)
 
     const wrapper = mount(App)
     await flushPromises()
 
-    // 3 screen events in 2 hourly buckets
-    expect(wrapper.text()).toContain('3 screen events')
-    expect(wrapper.text()).toContain('2 hourly buckets')
-  })
-
-  it('applies a countryAgg filter and updates the caption', async () => {
-    fetchFileListMock.mockResolvedValue(['events-a.parquet'])
-    fetchEventsMock.mockResolvedValue(sampleEvents)
-
-    const wrapper = mount(App)
-    await flushPromises()
+    // Unfiltered: 3 distinct players (p1, p2, p3).
+    const nCellBefore = wrapper.get('[data-testid="metrics-table"] tr.row-n td').text()
+    expect(nCellBefore).toBe('3')
 
     await wrapper.get('[data-testid="filter-country-agg"]').setValue('jp')
     await flushPromises()
 
-    // Only 1 jp screen event remains
-    expect(wrapper.text()).toContain('1 screen events')
-    expect(wrapper.text()).toContain('1 hourly buckets')
+    // After filtering to jp: only p3 remains.
+    const nCellAfter = wrapper.get('[data-testid="metrics-table"] tr.row-n td').text()
+    expect(nCellAfter).toBe('1')
   })
 
   it('applies a platform filter', async () => {
@@ -106,8 +101,9 @@ describe('App', () => {
     await wrapper.get('[data-testid="filter-platform"]').setValue('android')
     await flushPromises()
 
-    // Only 1 android screen event
-    expect(wrapper.text()).toContain('1 screen events')
+    // p2 is the only android player.
+    const nCell = wrapper.get('[data-testid="metrics-table"] tr.row-n td').text()
+    expect(nCell).toBe('1')
   })
 
   it('lists the join-weeks present in the loaded data', async () => {

@@ -10,26 +10,21 @@ test('renders the time-series chart for screen events', async ({ page }) => {
   const chart = page.locator('[data-testid="chart"] svg')
   await expect(chart).toBeVisible({ timeout: 30_000 })
 
-  // Sanity-check the caption that summarizes the loaded dataset. The text
-  // "screen events" appears in the Y-axis label too, so we scope to .caption.
-  const caption = page.locator('.caption')
-  await expect(caption).toContainText(/\d{1,3}(,\d{3})+ screen events/)
-  await expect(caption).toContainText(/\d+ hourly buckets/)
+  // The metrics table is the load-completed signal we assert on.
+  await expect(page.getByTestId('metrics-table')).toBeVisible()
 })
 
-test('filter narrows the dataset and updates the caption', async ({ page }) => {
+test('filter narrows the dataset and updates the player count', async ({ page }) => {
   await page.goto('/')
-  const caption = page.locator('.caption')
-  await expect(caption).toContainText(/screen events/, { timeout: 30_000 })
+  const nCell = page.locator('[data-testid="metrics-table"] tr.row-n td').first()
+  await expect(nCell).toHaveText(/^\d{1,3}(,\d{3})*$/, { timeout: 30_000 })
 
-  const unfiltered = (await caption.textContent()) ?? ''
+  const unfilteredN = (await nCell.textContent()) ?? ''
 
-  // The ca-only dataset has both ENG and Other countries — pick jp which is
-  // present in much smaller volume (or zero) — but at minimum the caption
-  // text should change once a filter is applied.
+  // Picking ios narrows the player set, so the n(players) cell value changes.
   await page.getByTestId('filter-platform').selectOption('ios')
-  await expect(caption).not.toHaveText(unfiltered, { timeout: 5_000 })
-  await expect(caption).toContainText(/screen events/)
+  await expect(nCell).not.toHaveText(unfilteredN, { timeout: 5_000 })
+  await expect(nCell).toHaveText(/^\d{1,3}(,\d{3})*$/)
 })
 
 test('group-by renders a multi-series chart with a legend', async ({ page }) => {
@@ -38,10 +33,11 @@ test('group-by renders a multi-series chart with a legend', async ({ page }) => 
 
   await page.getByTestId('group-by').selectOption('platform')
 
-  // Once grouped, Plot adds a swatch legend with one entry per platform.
-  // The legend renders as a separate svg under the chart container.
-  const swatches = page.locator('[data-testid="chart"] .plot-swatch, [data-testid="chart"] [class*="swatch"]')
-  await expect(swatches.first()).toBeVisible({ timeout: 5_000 })
+  // Once grouped, our custom legend renders below the chart with one entry
+  // per platform.
+  const legend = page.getByTestId('legend')
+  await expect(legend).toBeVisible({ timeout: 5_000 })
+  await expect(legend.locator('.legend-item').first()).toBeVisible()
 
   // The country filter remains enabled; the platform filter becomes disabled
   // because we're already breaking out by platform.
@@ -220,6 +216,44 @@ test('loads the 10.5M-row "full" dataset via row-group-batched decode', async ({
   // The full dataset has ~64k unique players.
   const nCell = page.locator('[data-testid="metrics-table"] tr.row-n td').first()
   await expect(nCell).toHaveText(/^\d{2,3},\d{3}$/)
+})
+
+test('time-series chart legend is below the chart and is clickable to focus a series', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await expect(page.getByTestId('metrics-table')).toBeVisible({ timeout: 30_000 })
+
+  // No legend in the ungrouped default.
+  await expect(page.getByTestId('legend')).toHaveCount(0)
+
+  // Group by platform → legend appears with one item per platform.
+  await page.getByTestId('group-by').selectOption('platform')
+  const legend = page.getByTestId('legend')
+  await expect(legend).toBeVisible({ timeout: 5_000 })
+
+  // Legend is positioned BELOW the chart in document order.
+  const chartTop = await page
+    .locator('[data-testid="chart"]')
+    .evaluate((el) => el.getBoundingClientRect().top)
+  const legendTop = await legend.evaluate((el) => el.getBoundingClientRect().top)
+  expect(legendTop).toBeGreaterThan(chartTop)
+
+  const items = legend.locator('.legend-item')
+  const itemCount = await items.count()
+  expect(itemCount).toBeGreaterThanOrEqual(2)
+
+  // All items start visible (none marked inactive).
+  await expect(legend.locator('.legend-item.inactive')).toHaveCount(0)
+
+  // Click the first item: that one stays active, all others become inactive.
+  await items.first().click()
+  await expect(legend.locator('.legend-item.inactive')).toHaveCount(itemCount - 1)
+  await expect(items.first()).not.toHaveClass(/inactive/)
+
+  // Click the same item again: all restored.
+  await items.first().click()
+  await expect(legend.locator('.legend-item.inactive')).toHaveCount(0)
 })
 
 test('exposes a /healthz endpoint that returns 200 OK', async ({ request }) => {
