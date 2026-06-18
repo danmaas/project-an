@@ -53,7 +53,7 @@ describe('App', () => {
   it('renders the title and explainer on initial mount', () => {
     fetchFileListMock.mockReturnValue(new Promise(() => {}))
     const wrapper = mount(App)
-    expect(wrapper.text()).toContain('Player Insights')
+    expect(wrapper.text()).toContain('User Insights')
     // First sentence of the explainer paragraph (copied from AGENTS.md).
     expect(wrapper.get('[data-testid="explainer"]').text()).toContain(
       'demo',

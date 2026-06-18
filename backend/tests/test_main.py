@@ -16,7 +16,7 @@ def test_healthz_returns_ok() -> None:
 
 
 def test_app_metadata() -> None:
-    assert app.title == "Player Insights"
+    assert app.title == "User Insights"
 
 
 def test_unknown_route_returns_404() -> None:

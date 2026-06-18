@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test'
 
 test('renders the time-series chart for screen events', async ({ page }) => {
   await page.goto('/')
-  await expect(page).toHaveTitle(/Player Insights/i)
-  await expect(page.getByRole('heading', { name: 'Player Insights' })).toBeVisible()
+  await expect(page).toHaveTitle(/User Insights/i)
+  await expect(page.getByRole('heading', { name: 'User Insights' })).toBeVisible()
 
   // Chart loads asynchronously: the parquet is fetched, decoded, aggregated,
   // then rendered as an SVG. Once that completes the loading state is gone.
@@ -170,7 +170,7 @@ test('loads the medium dataset without freezing the UI, showing a progress bar',
     // A quick synchronous call that requires the main thread to service it.
     return document.title
   })
-  expect(responsiveDuringLoad).toMatch(/Player Insights/i)
+  expect(responsiveDuringLoad).toMatch(/User Insights/i)
 
   // Eventually the chart renders for the new file. Give it generous time —
   // 1.4M rows take a few seconds even on a worker.

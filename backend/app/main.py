@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-app = FastAPI(title="Player Insights")
+app = FastAPI(title="User Insights")
 
 # In the Docker image this resolves to the /data mount. In local dev, override
 # via PROJECT_AN_DATA_DIR or just point uvicorn at the repo's data/ directory.

@@ -22,7 +22,7 @@ import MetricsTable from './components/MetricsTable.vue'
 import ProgressBar from './components/ProgressBar.vue'
 import TimeSeriesChart from './components/TimeSeriesChart.vue'
 
-const title = 'Player Insights'
+const title = 'User Insights'
 const explainer = 'This is a demo of data analysis & visualization, making use of data from one of my side projects, a mobile puzzle game (https://badukpop.com). As a game developer, it is vital to understand the drivers of user behavior. What aspects of the app, and of user demographics, correlate with important business outcomes, like user retention and monetization?'
 + '\n\n' +
 'This demo loads anonymized event logs recorded by the game server. The raw data consists of millions of events, including each time a user navigated in the game UI, started a puzzle, or entered a purchase flow. The "source" dropdown selects a dataset to load ("events-202605-full" is the largest and most useful one; ~60MB download. If download is too slow, try the smaller "events-202605-us"). The "Filter Players" panel allows viewing a subset of the data by demographics (e.g. country and device platform).'
