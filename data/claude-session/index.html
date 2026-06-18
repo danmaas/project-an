@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - Index</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <h1>Claude Code transcript</h1>
+            <div id="search-box">
+                <input type="text" id="search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+        <p style="color: var(--text-muted); margin-bottom: 24px;">39 prompts · 1282 messages · 447 tool calls · 0 commits · 8 pages</p>
+        
+<div class="index-item"><a href="page-001.html#msg-2026-06-17T22-12-24-660Z"><div class="index-item-header"><span class="index-item-number">#1</span><time datetime="2026-06-17T22:12:24.660Z" data-timestamp="2026-06-17T22:12:24.660Z">2026-06-17T22:12:24.660Z</time></div><div class="index-item-content"><p><local-command-caveat>Caveat: The messages below were generated by the user while running local commands. DO NOT respond to these messages or otherwise consider them in your response unless the user explicitly asks you to.</local-command-caveat></p></div></a></div>
+<div class="index-item"><a href="page-001.html#msg-2026-06-17T22-12-24-660Z"><div class="index-item-header"><span class="index-item-number">#2</span><time datetime="2026-06-17T22:12:24.660Z" data-timestamp="2026-06-17T22:12:24.660Z">2026-06-17T22:12:24.660Z</time></div><div class="index-item-content"><p><command-name>/model</command-name>
+            <command-message>model</command-message>
+            <command-args></command-args></p></div></a></div>
+<div class="index-item"><a href="page-001.html#msg-2026-06-17T22-12-24-660Z"><div class="index-item-header"><span class="index-item-number">#3</span><time datetime="2026-06-17T22:12:24.660Z" data-timestamp="2026-06-17T22:12:24.660Z">2026-06-17T22:12:24.660Z</time></div><div class="index-item-content"><p><local-command-stdout>Set model to [1mOpus 4.7[22m and saved as your default for new sessions with [1mxhigh[22m effort</local-command-stdout></p></div></a></div>
+<div class="index-item"><a href="page-001.html#msg-2026-06-17T22-17-56-727Z"><div class="index-item-header"><span class="index-item-number">#4</span><time datetime="2026-06-17T22:17:56.727Z" data-timestamp="2026-06-17T22:17:56.727Z">2026-06-17T22:17:56.727Z</time></div><div class="index-item-content"><p>Read AGENTS.md and TODO.md to familiarize yourself with this project. Your first task will be implementing TASK-000 (the repo skeleton / harness). Before getting started though, first look for any critical gaps in the AGENTS.md design, and also ask me any clarifying questions that will help the implementation go more smoothly.</p></div></a><div class="index-item-stats"><span>1 read · 1 bash · 1 askuserquestion</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>I've read AGENTS.md (in your context) and TODO.md. Here's my gap analysis, then the questions I think matter most.</p>
+<h2>Gaps / underspecified bits in AGENTS.md</h2>
+<p><strong>Tool/framework choices left open</strong> (will affect a lot of TASK-000 code):
+- <strong>Python HTTP server library</strong> — "lightweight" is vague; could be stdlib <code>http.server</code>, Flask, FastAPI, Starlette, etc.
+- <strong>Vue version &amp; build tooling</strong> — esbuild is preferred but Vite (which wraps esbuild) is the standard Vue toolchain. Vue 3 + Composition API assumed?
+- <strong>Node package manager</strong> — security section implies <code>yarn</code> (mentions <code>yarn audit</code> and "resolutions"). Yarn 4 modern, or Yarn 1 classic?
+- <strong>Testing frameworks</strong> — pytest? vitest? playwright for e2e?
+- <strong>Linters/formatters</strong> — Ruff/Black? ESLint/Prettier?</p>
+<p><strong>Slight contradictions / ambiguities:</strong>
+- "bundle together a pre-provisioned dataset" vs. "mounted into the container at runtime" — I'll assume the latter (data lives only on the host, mounted at <code>/data</code>), and the former is just describing the product concept.
+- "exposes the web server on port 80" — binding port 80 inside the container requires root. Common practice is to bind a higher port internally (e.g., 8080) and let <code>docker run -p 80:8080</code> do the mapping. Worth confirming.
+- <strong>E2E test target</strong> — should the e2e test run against a running container, or against the dev server?</p>
+<p><strong>Things I'll just pick sensible defaults for unless you object:</strong> Vue 3 + <code>&lt;script setup&gt;</code> Composition API, Ruff for Python lint+format, ESLint + Prettier for TS, pytest + coverage.py, vitest for unit tests, Node 22 LTS, Python 3.12, <code>python:3.12-slim</code> and <code>node:22-alpine</code> (multi-stage) as base images.</p>
+<p>A few questions before I start:</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-06-17T22-21-58-325Z"><div class="index-item-header"><span class="index-item-number">#5</span><time datetime="2026-06-17T22:21:58.325Z" data-timestamp="2026-06-17T22:21:58.325Z">2026-06-17T22:21:58.325Z</time></div><div class="index-item-content"><p>[Request interrupted by user]</p></div></a></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-17T22-22-51-894Z"><div class="index-item-header"><span class="index-item-number">#6</span><time datetime="2026-06-17T22:22:51.894Z" data-timestamp="2026-06-17T22:22:51.894Z">2026-06-17T22:22:51.894Z</time></div><div class="index-item-content"><p>all sounds good, but please use python 3.14 instead of 3.12. Also, I want you to update AGENTS.md and TODO.md as necessary to record the conclusions of our discussion.</p></div></a><div class="index-item-stats"><span>5 edit</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Updates recorded. Summary of what changed:</p>
+<p><strong>AGENTS.md</strong>
+- Port: 80 → <strong>8000</strong>
+- Front-end: now specifies <strong>Vue 3 + Composition API + Vite</strong>, Yarn as the package manager
+- Back-end: now specifies <strong>Python 3.14 + FastAPI + uvicorn</strong>, with role clarified (serve static assets + stream Parquet)
+- Added a <code>Test frameworks</code> subsection (pytest+coverage.py, vitest, Playwright vs built container)
+- Added a guideline: <code>ruff</code> for Python, <code>eslint</code>+<code>prettier</code> for TS</p>
+<p><strong>TODO.md</strong>
+- TASK-000 marked <code>INPROGRESS</code></p>
+<p>Ready to start the TASK-000 implementation. Before I dive in, want me to lay out a brief plan (directory layout, what each file will be, Makefile targets) for your sign-off first, or just go?</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-17T22-25-20-030Z"><div class="index-item-header"><span class="index-item-number">#7</span><time datetime="2026-06-17T22:25:20.030Z" data-timestamp="2026-06-17T22:25:20.030Z">2026-06-17T22:25:20.030Z</time></div><div class="index-item-content"><p>show me the brief plan</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><h2>Plan for TASK-000</h2>
+<h3>Directory layout</h3>
+<pre><code>project-an/
+├── Dockerfile              # multi-stage: node builder → python runtime
+├── .dockerignore
+├── .gitignore
+├── Makefile
+├── backend/
+│   ├── pyproject.toml      # deps: fastapi, uvicorn, pandas, pyarrow + dev: pytest, coverage, ruff
+│   ├── app/main.py         # FastAPI: /healthz + static mount of built front-end
+│   └── tests/test_main.py  # pytest via FastAPI TestClient
+├── frontend/
+│   ├── package.json        # Yarn 4 (via corepack); deps: vue, vite, @vitejs/plugin-vue, typescript, vitest, eslint, prettier
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   ├── index.html
+│   ├── src/{main.ts, App.vue, style.css}
+│   └── tests/App.test.ts   # vitest
+└── e2e/
+    ├── package.json        # @playwright/test
+    ├── playwright.config.ts
+    └── tests/smoke.spec.ts # builds &amp; runs container, asserts hello-world UI
+</code></pre>
+<h3>Key decisions</h3>
+<ul>
+<li><strong>Python deps</strong>: <code>pyproject.toml</code> + <code>uv</code> for fast installs and good Docker layer caching.</li>
+<li><strong>Yarn</strong>: Yarn 4 via Corepack (no global install needed).</li>
+<li><strong>Dockerfile</strong> (multi-stage):</li>
+<li><code>node:22-alpine</code> builder → <code>yarn install</code> → <code>yarn build</code> → <code>/app/dist</code></li>
+<li><code>python:3.14-slim</code> runtime → <code>uv pip install</code> backend deps → copy backend + dist → <code>EXPOSE 8000</code> → <code>uvicorn app.main:app --host 0.0.0.0 --port 8000</code></li>
+<li>Order layers so source edits don't bust the deps cache.</li>
+<li><strong>Static serving</strong>: FastAPI mounts the Vite build output at <code>/</code> (with <code>html=True</code> for SPA fallback); <code>/healthz</code> for liveness.</li>
+<li><strong>E2E strategy</strong>: Playwright fixture does <code>docker build</code> + <code>docker run -d -p 8000:8000 -v $(pwd)/data:/data</code>, waits for <code>/healthz</code>, runs spec, tears down.</li>
+</ul>
+<h3>Makefile targets</h3>
+<ul>
+<li><code>make install</code> — install backend (<code>uv sync</code>) + frontend (<code>yarn install</code>) + e2e deps</li>
+<li><code>make build</code> — <code>docker build -t project-an .</code></li>
+<li><code>make run</code> — <code>docker run --rm -p 8000:8000 -v $(PWD)/data:/data project-an</code></li>
+<li><code>make test</code> — runs <code>test-backend</code>, <code>test-frontend</code>, <code>test-e2e</code></li>
+<li><code>make test-backend</code> / <code>make test-frontend</code> / <code>make test-e2e</code></li>
+<li><code>make lint</code> — ruff + eslint</li>
+<li><code>make fmt</code> — ruff format + prettier</li>
+<li><code>make clean</code></li>
+</ul>
+<h3>"Hello world" surface</h3>
+<ul>
+<li><code>App.vue</code> renders a centered card: project title + "Hello, world." subtitle, light/dark-aware neutral palette via CSS variables. Just enough theme to look intentional, not styled-out.</li>
+</ul>
+<h3>AGENTS.md follow-up</h3>
+<p>Once the harness works locally, I'll fill in the <code>Running the test suite</code> section with the real <code>make</code> commands and any caveats (e.g. e2e requires Docker daemon).</p>
+<p>Anything to adjust before I start building?</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-17T22-29-01-329Z"><div class="index-item-header"><span class="index-item-number">#8</span><time datetime="2026-06-17T22:29:01.329Z" data-timestamp="2026-06-17T22:29:01.329Z">2026-06-17T22:29:01.329Z</time></div><div class="index-item-content"><p>for the multi-stage Docker build: confirm for me that changing the front-end code won't force the backend to rebuild (uv pip install) and changing the back-end code won't force the frontend to rebuild (yarn install), right? Each build is separate and then the artifacts from backend + frontend builds are merged in a final step to make the runnable container?</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Yes, confirmed — that's exactly the design, but it only works because of two specific structural choices I want to call out so you can sanity-check them.</p>
+<h3>Why the isolation holds</h3>
+<p>Docker BuildKit (default in modern Docker) caches each stage independently and only invalidates layers from the point an input changes onward. So:</p>
+<ul>
+<li>The <strong>frontend-builder stage</strong> never <code>COPY</code>s anything from the backend → backend <code>.py</code> edits cannot reach it, so it stays fully cached.</li>
+<li>The <strong>runtime stage</strong> does pull from the frontend builder, BUT only as the <em>last</em> <code>COPY</code> step. So frontend changes invalidate that final copy and nothing earlier.</li>
+</ul>
+<h3>Layer order (the part that makes it work)</h3>
+<pre><code class="language-dockerfile"># Stage 1: frontend-builder (node:22-alpine)
+COPY frontend/package.json frontend/yarn.lock ./
+RUN corepack enable &amp;&amp; yarn install --immutable   # cached unless deps change
+COPY frontend/ ./                                  # invalidated by FE src edits
+RUN yarn build
+
+# Stage 2: runtime (python:3.14-slim)
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --frozen --no-dev                      # cached unless BE deps change
+COPY backend/ ./                                   # invalidated by BE src edits
+COPY --from=frontend-builder /app/dist ./static    # invalidated by FE changes
+EXPOSE 8000
+CMD [&quot;uvicorn&quot;, &quot;app.main:app&quot;, &quot;--host&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;8000&quot;]
+</code></pre>
+<h3>What invalidates what</h3>
+<table>
+<thead>
+<tr>
+<th>Change</th>
+<th style="text-align: center;"><code>yarn install</code></th>
+<th style="text-align: center;"><code>yarn build</code></th>
+<th style="text-align: center;"><code>uv sync</code></th>
+<th style="text-align: center;">runtime <code>COPY backend/</code></th>
+<th style="text-align: center;">runtime <code>COPY --from=</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BE <code>.py</code> edit</td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+<td style="text-align: center;">cached</td>
+</tr>
+<tr>
+<td>FE <code>.vue/.ts</code> edit</td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+</tr>
+<tr>
+<td><code>package.json</code></td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+</tr>
+<tr>
+<td><code>pyproject.toml</code></td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;">cached</td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+<td style="text-align: center;"><strong>rebuild</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Two subtleties worth knowing:</p>
+<ol>
+<li><strong><code>RUN uv sync</code> must come BEFORE <code>COPY --from=frontend-builder</code></strong> in the runtime stage. If I swapped them, FE edits would bust the Python deps cache. My plan keeps the order above.</li>
+<li>With BuildKit, the frontend-builder and runtime-stage's Python-deps install can run <strong>in parallel</strong> — they're independent until the final <code>COPY --from=</code>. So a cold build is also faster.</li>
+</ol>
+<p>Want me to proceed with the implementation as designed?</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-17T22-30-45-290Z"><div class="index-item-header"><span class="index-item-number">#9</span><time datetime="2026-06-17T22:30:45.290Z" data-timestamp="2026-06-17T22:30:45.290Z">2026-06-17T22:30:45.290Z</time></div><div class="index-item-content"><p>Yes. Implement TASK-000. Check your work by making sure the tests pass. (as well as adding these testing instructions to AGENTS.md).</p></div></a><div class="index-item-stats"><span>23 write · 17 bash · 3 edit</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Good — Python 3.14.5, uv 0.11.21, Node 24, yarn, Docker all available. I noticed the "Edward Tufte" styling cue in AGENTS.md — I'll lean the hello-world's typography in that direction (serif, off-white background, restrained palette) so it sets the right tone even at this skeleton stage.</p>
+<p>Writing all the files now.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>TASK-000 complete and verified. Summary:</p>
+<p><strong>Files created</strong>
+- <code>Dockerfile</code> (multi-stage: node→python, with the cache-isolation properties we discussed)
+- <code>Makefile</code> (install, build, run, test, lint, fmt, typecheck, clean)
+- <code>.gitignore</code>, <code>.dockerignore</code>
+- <code>backend/</code>: <code>pyproject.toml</code>, <code>app/main.py</code> (FastAPI + <code>/healthz</code> + static mount), <code>tests/test_main.py</code>
+- <code>frontend/</code>: Vue 3 + Vite + TypeScript hello-world with Tufte-leaning serif typography (off-white #fffff8 paper, hairline rule under the header, italic subtitle); vitest unit test
+- <code>e2e/</code>: Playwright config that spins up the built Docker container and tears it down automatically</p>
+<p><strong>Test results (all green)</strong>
+- <code>make test-backend</code> → 3 passed, <strong>83% coverage</strong> (above the 80% gate, which is enforced via <code>--cov-fail-under=80</code> in <code>pyproject.toml</code>)
+- <code>make test-frontend</code> → 2 passed
+- <code>make test-e2e</code> → 2 passed against the real container (<code>docker run</code> mounting <code>./data</code> at <code>/data</code>)</p>
+<p><strong>Two things to note</strong>
+1. Yarn 4's default PnP linker breaks Vitest startup, so both <code>frontend/</code> and <code>e2e/</code> use <code>nodeLinker: node-modules</code> via <code>.yarnrc.yml</code>. The Dockerfile copies <code>.yarnrc.yml</code> alongside <code>package.json</code> before <code>yarn install</code> so the image build uses the same linker.
+2. FastAPI's <code>TestClient</code> emits a deprecation warning about <code>httpx2</code> (upstream issue, not actionable here). Tests still pass.</p>
+<p><strong>AGENTS.md</strong> — the "Running the test suite" section now has the real instructions (<code>make install</code>, <code>make test</code>, individual targets, Docker daemon requirement).</p>
+<p><strong>TODO.md</strong> — TASK-000 marked <code>[DONE]</code>. Ready to move on to TASK-100 whenever you are.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-17T22-50-20-399Z"><div class="index-item-header"><span class="index-item-number">#10</span><time datetime="2026-06-17T22:50:20.399Z" data-timestamp="2026-06-17T22:50:20.399Z">2026-06-17T22:50:20.399Z</time></div><div class="index-item-content"><p>one of these steps left a Docker container running. Can you ensure the container is cleaned up automatically?</p></div></a><div class="index-item-stats"><span>9 bash · 4 write · 3 edit</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Now hardening the e2e config. Root cause: Playwright's <code>webServer</code> runs <code>docker run</code> via a shell; signals from Playwright sometimes don't reach the docker CLI cleanly, and even when they do, the container can outlive the test run. The fix has three parts:</p>
+<ol>
+<li><strong>Name the container</strong> so we have a stable handle to kill.</li>
+<li><strong><code>exec</code> the docker run</strong> inside the shell so docker replaces the shell PID and signals go directly to it.</li>
+<li><strong><code>globalSetup</code> + <code>globalTeardown</code></strong> as a belt-and-suspenders cleanup that runs <code>docker rm -f</code> regardless of what happened to signals.</li>
+</ol></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Found it — Playwright 1.61 runs <code>globalSetup</code> and <code>webServer</code> in parallel, not sequentially. The webServer started the container, healthz passed, then <code>globalSetup</code> ran <code>docker rm -f</code> and killed it before the tests started.</p>
+<p>Fix: move the pre-cleanup into the webServer command itself (where it's guaranteed to run before the new container), and keep <code>globalTeardown</code> as the post-run safety net.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Second issue uncovered: when a container is already serving on <code>:8001</code>, Playwright's pre-flight URL check succeeds and it refuses to start <code>webServer</code> at all (with <code>reuseExistingServer: false</code> it bails with an error). So the webServer's internal pre-cleanup never runs.</p>
+<p>Fix: do the pre-cleanup at the npm-script level, before Playwright is even invoked.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Both scenarios verified. Container is reliably cleaned up.</p>
+<p><strong>What I changed</strong></p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>e2e/playwright.config.ts</code></td>
+<td>Container now runs with <code>--name project-an-e2e</code>. The <code>webServer</code> command uses <code>exec docker run ...</code> inside <code>sh -c</code> so signals from Playwright go directly to docker. Added <code>globalTeardown</code>.</td>
+</tr>
+<tr>
+<td><code>e2e/global-teardown.ts</code></td>
+<td>New — runs <code>docker rm -f project-an-e2e</code> after the suite as a safety net for the case where signal-based shutdown didn't kill the container.</td>
+</tr>
+<tr>
+<td><code>e2e/scripts/clean-container.mjs</code></td>
+<td>New — runs <code>docker rm -f</code> before Playwright starts. Required because if a previous run leaked a container that's still serving on the port, Playwright sees the URL already responding and refuses to launch <code>webServer</code> at all (so cleanup inside <code>webServer</code> would be too late).</td>
+</tr>
+<tr>
+<td><code>e2e/package.json</code></td>
+<td><code>test</code> script now chains the pre-clean step before <code>playwright test</code> (Yarn 4 doesn't auto-run <code>pre*</code> hooks).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Three layers of defense</strong> — each handles a distinct failure mode:</p>
+<ol>
+<li><strong>Pre-script cleanup</strong> (<code>clean-container.mjs</code>) — removes leaked container <em>before</em> Playwright's URL probe, so a port-occupying leftover from a previous crashed run doesn't make Playwright bail.</li>
+<li><strong><code>exec docker run</code></strong> in the webServer command — makes docker the direct child of Playwright's spawned process so SIGTERM propagates correctly through <code>docker → container PID 1 → uvicorn</code>, allowing <code>--rm</code> to clean up on the happy path.</li>
+<li><strong><code>globalTeardown</code></strong> — <code>docker rm -f</code> after the suite, in case signals still didn't bring the container down.</li>
+</ol>
+<p>Tested: starting from both a clean state and with a stale <code>project-an-e2e</code> container in place, the run passes and <code>docker ps -a</code> is empty afterward.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-17T22-55-37-030Z"><div class="index-item-header"><span class="index-item-number">#11</span><time datetime="2026-06-17T22:55:37.030Z" data-timestamp="2026-06-17T22:55:37.030Z">2026-06-17T22:55:37.030Z</time></div><div class="index-item-content"><p>can you update "make run" to also open a browser to connect to the container? Assume this is running on a MacOS laptop.</p></div></a><div class="index-item-stats"><span>4 bash · 2 edit</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Container stopped, no leftovers. <code>make run</code> works:</p>
+<ul>
+<li>Builds the image</li>
+<li>Starts <code>docker run</code> in the foreground (so Ctrl-C stops the container, as before)</li>
+<li>A backgrounded subshell polls <code>/healthz</code> and calls <code>open http://127.0.0.1:8000</code> as soon as the server is ready, which opens the URL in your default macOS browser</li>
+<li>No browser tabs open until the server is actually serving requests</li>
+</ul>
+<p>Verified: container came up, <code>/healthz</code> returned <code>{"status":"ok"}</code>, and the macOS <code>open</code> command fired against the URL. <code>make help</code> text updated to mention the browser behavior.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-17T22-57-21-488Z"><div class="index-item-header"><span class="index-item-number">#12</span><time datetime="2026-06-17T22:57:21.488Z" data-timestamp="2026-06-17T22:57:21.488Z">2026-06-17T22:57:21.488Z</time></div><div class="index-item-content"><p>I think we need to add **/.yarn/install-state.gz to .gitignore, right?</p></div></a><div class="index-item-stats"><span>3 bash · 1 edit</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>You're right — git is not currently ignoring those <code>install-state.gz</code> files. Let me also check: the root cause is that my existing <code>.yarn/*</code> pattern is anchored to repo root (because it contains a <code>/</code>), so it only matches <code>./yarn/</code>, not <code>frontend/.yarn/</code> or <code>e2e/.yarn/</code>. The whole yarn-related block is leaky for subdirectory projects.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Fixed and verified:</p>
+<ul>
+<li><code>frontend/.yarn/install-state.gz</code> and <code>e2e/.yarn/install-state.gz</code> are now ignored (matched by <code>**/.yarn/*</code>)</li>
+<li>The exceptions still work: a hypothetical <code>frontend/.yarn/releases/yarn-4.5.3.cjs</code> is NOT ignored (exit 1 from <code>git check-ignore</code>)</li>
+</ul>
+<p>The fix is broader than just one file: the original rules (<code>.yarn/*</code>, <code>!.yarn/releases</code>, etc.) contained a <code>/</code> so they were anchored to the repo root and never matched the subdirectory yarn projects. I prefixed each with <code>**/</code> so they now apply at any depth. Also added <code>**/.pnp.*</code> while I was at it, in case anyone switches a sub-project back to the PnP linker later.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-17T22-59-35-201Z"><div class="index-item-header"><span class="index-item-number">#13</span><time datetime="2026-06-17T22:59:35.201Z" data-timestamp="2026-06-17T22:59:35.201Z">2026-06-17T22:59:35.201Z</time></div><div class="index-item-content"><p>Great. Now implement TASK-100 (including relevant tests).</p></div></a><div class="index-item-stats"><span>17 bash · 12 write · 6 edit</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>TASK-100 done. Summary:</p>
+<p><strong>Backend</strong> — added <code>/api/data/{filename}</code> (GET + HEAD), serving Parquet files from the <code>/data</code> mount with path-traversal defenses (must end in <code>.parquet</code>, no <code>/</code>, no leading <code>.</code>, resolved path must stay inside <code>DATA_DIR</code>). HEAD support is required because <code>hyparquet</code> issues a HEAD before GET to size the file.</p>
+<p><strong>Frontend</strong> — fetches the parquet client-side via <code>hyparquet</code> (with column projection — only <code>ts</code> and <code>event</code>), buckets by UTC hour, renders with Observable Plot. Tufte-leaning chart styling: hairline 1px stroke, baseline rule at zero, serif tick labels, no background. Loading / error / ready states. Caption summarizes "N screen events, M hourly buckets" at the bottom.</p>
+<p><strong>Tests — all green</strong>
+- <strong>Backend (pytest)</strong>: 9 tests, 93% coverage. New tests cover happy-path serve, missing file, non-parquet extension, dotfile, path traversal, and HEAD method.
+- <strong>Frontend (vitest)</strong>: 16 tests across <code>aggregate.test.ts</code> (bucketing + filtering), <code>parquet.test.ts</code> (timestamp normalization across Date / bigint µs / bigint ns / ISO strings / numeric ms), and <code>App.test.ts</code> (loading, ready, and error states with mocked data layer).
+- <strong>E2E (Playwright)</strong>: 4 tests — chart renders with the caption summary, <code>/healthz</code>, parquet endpoint serves PAR1 magic bytes, 404 for missing files.</p>
+<p><strong>Two surprises along the way</strong>, both fixed:
+1. <code>@app.get(...)</code> doesn't auto-register HEAD on FastAPI (<code>hyparquet</code> HEAD-probes before downloading) — switched to <code>@app.api_route(..., methods=["GET", "HEAD"])</code> and added a HEAD test.
+2. Observable Plot's Y-axis label includes "screen events", which collided with <code>getByText(/screen events/i)</code> in Playwright — scoped the assertion to the <code>.caption</code> element instead.</p>
+<p>Live data ends up with <strong>68,581 screen events over 713 hourly buckets</strong> across the May 2026 Canadian event log.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-17T23-17-57-193Z"><div class="index-item-header"><span class="index-item-number">#14</span><time datetime="2026-06-17T23:17:57.193Z" data-timestamp="2026-06-17T23:17:57.193Z">2026-06-17T23:17:57.193Z</time></div><div class="index-item-content"><p><local-command-caveat>Caveat: The messages below were generated by the user while running local commands. DO NOT respond to these messages or otherwise consider them in your response unless the user explicitly asks you to.</local-command-caveat></p></div></a></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-17T23-17-57-193Z"><div class="index-item-header"><span class="index-item-number">#15</span><time datetime="2026-06-17T23:17:57.193Z" data-timestamp="2026-06-17T23:17:57.193Z">2026-06-17T23:17:57.193Z</time></div><div class="index-item-content"><p><command-name>/model</command-name>
+            <command-message>model</command-message>
+            <command-args></command-args></p></div></a></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-17T23-17-57-193Z"><div class="index-item-header"><span class="index-item-number">#16</span><time datetime="2026-06-17T23:17:57.193Z" data-timestamp="2026-06-17T23:17:57.193Z">2026-06-17T23:17:57.193Z</time></div><div class="index-item-content"><p><local-command-stdout>Set model to [1mOpus 4.7[22m and saved as your default for new sessions with [1mhigh[22m effort</local-command-stdout></p></div></a></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-17T23-19-03-087Z"><div class="index-item-header"><span class="index-item-number">#17</span><time datetime="2026-06-17T23:19:03.087Z" data-timestamp="2026-06-17T23:19:03.087Z">2026-06-17T23:19:03.087Z</time></div><div class="index-item-content"><p>Implement TASK-200.</p></div></a><div class="index-item-stats"><span>8 edit · 3 bash · 2 write · 1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>TASK-200 done.</p>
+<p><strong>What changed</strong></p>
+<ul>
+<li><strong>Backend</strong> — new <code>GET /api/data</code> endpoint returns <code>{ "files": [...] }</code>: sorted alphabetically, parquet files only, dotfiles and subdirectories skipped, empty list when the directory is missing.</li>
+<li><strong>Frontend</strong> — <code>App.vue</code> now fetches the file list on mount, defaults to the first file, and renders a Tufte-minimal source dropdown in the header (italic "source" label, underline-only <code>&lt;select&gt;</code>). The <code>watch(selectedFile)</code> reloads events and refreshes the chart whenever the user picks a different file. Added a <code>fetchFileList</code> helper in <code>data/parquet.ts</code>.</li>
+</ul>
+<p><strong>Tests — all green</strong>
+- Backend (<strong>pytest</strong>): 12 tests, <strong>95% coverage</strong> — three new tests cover the listing endpoint (parquet-only filtering with alphabetical order, empty dir, missing dir).
+- Frontend (<strong>vitest</strong>): 23 tests — <code>fetchFileList</code> (happy path, missing field, HTTP error) and <code>App.vue</code> (dropdown populates with formatted names, selection triggers reload, empty list shows a friendly error, file-list and event-load errors propagate to the UI).
+- E2E (<strong>Playwright</strong>): 6 tests — added <code>lists available event logs in the source dropdown</code> (checks both <code>events-202605-ca</code> and <code>events-202605-full</code> options are present) and <code>lists files via /api/data</code> (checks the JSON payload).</p>
+<p>Ready for TASK-300 (filtering / group-by) whenever you are.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-17T23-24-13-181Z"><div class="index-item-header"><span class="index-item-number">#18</span><time datetime="2026-06-17T23:24:13.181Z" data-timestamp="2026-06-17T23:24:13.181Z">2026-06-17T23:24:13.181Z</time></div><div class="index-item-content"><p>you forgot to update TODO.md to mark TASK-200 as DONE :). Please update AGENTS.md and/or TODO.md so you don't make this mistake again.</p></div></a><div class="index-item-stats"><span>2 bash · 2 edit · 1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Verified on disk: <code>TASK-200 [DONE]</code>.</p>
+<p>What I did to prevent recurrence:</p>
+<ol>
+<li><strong>Re-applied the TASK-200 status change</strong> and verified it landed on disk with <code>grep</code> (not just trusting the <code>Edit</code> tool's success message).</li>
+<li><strong>Strengthened the rule in AGENTS.md</strong> under "Guidelines &amp; Coding Conventions" — the existing "Keep TODO.md updated" line was too soft. New language makes it explicit that marking <code>[DONE]</code> is the <strong>final action</strong> of any task and requires a re-read to confirm it landed, since the file may have been concurrently edited by the user or a linter (which is exactly the failure mode that bit me here — I edited to <code>[DONE]</code> but a concurrent modification reset it to <code>[TODO]</code> and I never re-checked).</li>
+</ol></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-17T23-28-47-546Z"><div class="index-item-header"><span class="index-item-number">#19</span><time datetime="2026-06-17T23:28:47.546Z" data-timestamp="2026-06-17T23:28:47.546Z">2026-06-17T23:28:47.546Z</time></div><div class="index-item-content"><p>Implement TASK-300.</p></div></a><div class="index-item-stats"><span>10 write · 6 bash · 2 edit · 1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Reading TASK-300 carefully: three filters (country class, platform, join_week), a group-by selector that splits the chart by any of those dimensions, and the country classification needs to be encoded as cleanly editable data, not buried in code. Implementing now.</p>
+<h3>1. Country classification + types</h3></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Verified <code>[DONE]</code> on disk.</p>
+<p><strong>Summary of TASK-300</strong></p>
+<p><strong>Country classification</strong> — <code>frontend/src/data/country.ts</code> encodes the AGENTS.md scheme as a single ordered data table (<code>COUNTRY_CLASS_DEFS</code>). Adding/moving a country is a one-line change to that table; <code>classifyCountry</code> and <code>COUNTRY_CLASSES</code> are derived. The classification is applied once during <code>fetchEvents</code> so downstream code only sees class labels (<code>ENG</code>, <code>kr</code>, <code>EUR</code>, etc.), never raw ISO codes.</p>
+<p><strong>Filters &amp; group-by</strong> — new <code>FilterPanel.vue</code> component with four controls: <code>country</code>, <code>platform</code>, <code>join_week</code>, and <code>group by</code>. Filters use AND semantics (<code>applyFilters</code> in <code>data/aggregate.ts</code>). The dimension currently used by group-by has its filter dropdown auto-disabled (showing all values of X broken-down already; filtering X would be contradictory). Switching the source file resets filters and group-by to clear stale state.</p>
+<p><strong>Multi-series chart</strong> — <code>TimeSeriesChart.vue</code> auto-detects grouped data (any bucket with a defined <code>group</code>) and switches Plot config: per-group stroke color and an automatic swatch legend.</p>
+<p><strong>Frontend data layer</strong> — <code>fetchEvents</code> now projects <code>ts</code>, <code>event</code>, <code>country</code>, <code>platform</code>, <code>join_week</code>. New <code>bucketByHour(events, groupBy)</code>, <code>applyFilters</code>, <code>uniqueJoinWeeks</code>, <code>joinWeekKey</code> helpers.</p>
+<p><strong>Tests — all green</strong>
+- Backend (pytest): unchanged, <strong>12 tests / 95% coverage</strong>.
+- Frontend (vitest): <strong>53 tests / 4 files</strong> — new <code>country.test.ts</code> (18 cases covering ENG/EUR/literal/Other/case-handling/null), expanded <code>aggregate.test.ts</code> for grouping + filtering + week extraction (16), updated <code>App.test.ts</code> for filter/group-by/source-switch interactions (10).
+- E2E (Playwright): <strong>8 tests</strong> — added <code>filter narrows the dataset and updates the caption</code> and <code>group-by renders a multi-series chart with a legend</code> (which also verifies the platform filter auto-disables when grouping by platform).</p>
+<p>Note: Plot prints a benign warning about the implicit z channel in some test scenarios — does not affect any test outcome.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-17T23-36-50-549Z"><div class="index-item-header"><span class="index-item-number">#20</span><time datetime="2026-06-17T23:36:50.549Z" data-timestamp="2026-06-17T23:36:50.549Z">2026-06-17T23:36:50.549Z</time></div><div class="index-item-content"><p>In <code>interface PlayerEvent</code>, and filtering code, I don't like that you use the field name <code>country</code> to represent the country class, since it is misleadingly similar to the Parquet column name <code>country</code>. I want <code>country</code> to ONLY mean the raw country code. Can you please call the PlayerEvent field and filter options <code>countryAgg</code> ("Country Aggregate") instead?</p></div></a><div class="index-item-stats"><span>9 edit · 3 bash · 2 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Good call — the overload was confusing. Renaming <code>country</code> → <code>countryAgg</code> on the <code>PlayerEvent</code> field, the <code>Filters</code> interface, the <code>GroupBy</code> literal, the <code>data-testid</code> for the filter, and all of the corresponding code/tests. I'll keep <code>country</code> as the <strong>user-facing label</strong> in the dropdown (the values ENG/kr/EUR/Other already convey "aggregate") since you only asked for the field/option rename.</p>
+<h3>Types and data layer</h3></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>All tests still green:
+- Frontend: 53/53
+- Backend: 12/12 (95% coverage)
+- E2E: 8/8</p>
+<p><strong>Rename summary</strong></p>
+<table>
+<thead>
+<tr>
+<th>Was</th>
+<th>Now</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PlayerEvent.country</code></td>
+<td><code>PlayerEvent.countryAgg</code></td>
+<td><code>types.ts</code></td>
+</tr>
+<tr>
+<td><code>Filters.country</code></td>
+<td><code>Filters.countryAgg</code></td>
+<td><code>types.ts</code> + all consumers</td>
+</tr>
+<tr>
+<td><code>GroupBy = ... \| 'country' \| ...</code></td>
+<td><code>... \| 'countryAgg' \| ...</code></td>
+<td><code>types.ts</code></td>
+</tr>
+<tr>
+<td><code>data-testid="filter-country"</code></td>
+<td><code>data-testid="filter-country-agg"</code></td>
+<td><code>FilterPanel.vue</code>, App.test.ts, smoke.spec.ts</td>
+</tr>
+<tr>
+<td><code>&lt;option value="country"&gt;</code> in group-by</td>
+<td><code>&lt;option value="countryAgg"&gt;</code></td>
+<td><code>FilterPanel.vue</code></td>
+</tr>
+<tr>
+<td><code>applyFilters</code> destructuring <code>country</code></td>
+<td>destructures <code>countryAgg</code></td>
+<td><code>aggregate.ts</code></td>
+</tr>
+<tr>
+<td><code>groupKeyFor</code> <code>case 'country'</code></td>
+<td><code>case 'countryAgg'</code></td>
+<td><code>aggregate.ts</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>What stayed <code>country</code></strong> (and rightly so):
+- The Parquet column projection <code>columns: ['ts', 'event', 'country', ...]</code> and the row read <code>r.country</code> — these still reference the <strong>raw 2-letter ISO column</strong> in the source data, which is the meaning you wanted to preserve.
+- The <code>country.ts</code> module name and <code>classifyCountry</code> function — they convert raw country → aggregate.
+- The <strong>UI label</strong> <code>&lt;span&gt;country&lt;/span&gt;</code> in the dropdown — you only asked for code-level rename. The dropdown values (<code>ENG</code>, <code>kr</code>, <code>EUR</code>, <code>Other</code>) make it clear to the user these are buckets, not raw ISO codes.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-005.html#msg-2026-06-17T23-41-07-343Z"><div class="index-item-header"><span class="index-item-number">#21</span><time datetime="2026-06-17T23:41:07.343Z" data-timestamp="2026-06-17T23:41:07.343Z">2026-06-17T23:41:07.343Z</time></div><div class="index-item-content"><p>implement TASK-400</p></div></a><div class="index-item-stats"><span>12 edit · 5 bash · 3 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Re-reading TASK-400 carefully: we need per-player metrics (returned_1d/2d/3d + sub_buy_success) over the filtered set. That means a new dimension to the data — we now need <code>user_id_hash</code> to dedupe per player. I'll also honor group-by so the metrics break down the same way the chart does (matches the user's mental model and sets up TASK-500).</p>
+<h3>1. Types + parquet projection</h3></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Verified <code>[DONE]</code> on disk.</p>
+<p><strong>Summary of TASK-400</strong></p>
+<p><strong>Data layer</strong> — added <code>userIdHash</code> to <code>PlayerEvent</code> (sourced from the <code>user_id_hash</code> Parquet column, now in the projection). New <code>data/metrics.ts</code> with <code>computeRetentionMetrics(events, filters, groupBy)</code>:
+- Snapshots per-player attributes (country/platform/joinWeek) so filtering operates on <strong>players</strong>, not events. This is both correct (a player either passes the filter or doesn't — they don't pass for some of their events and fail for others) and efficient.
+- Counts accomplishment of each retention event <strong>independently</strong> per player — a player can contribute to multiple numerators but is counted <strong>once</strong> in the denominator. Duplicate event records for the same player are deduped via <code>Set</code>.
+- Honors group-by the same way the chart does (none → one aggregate row; otherwise one row per group).</p>
+<p><strong>UI</strong> — new <code>MetricsTable.vue</code> rendered below the chart caption. Tufte-leaning table styling: hairline rules only between header/n-row/metrics-row groupings, italic muted labels, right-aligned tabular-num figures, rate above count with the count in a softer color. Columns adapt automatically:
+- No group-by → single column labeled <code>all</code>.
+- Group-by active → one column per group, alphabetical.</p>
+<p><strong>1,193 distinct players</strong> in the <code>events-202605-ca.parquet</code> file.</p>
+<p><strong>Tests — all green</strong>
+- Frontend (vitest): <strong>66 tests / 5 files</strong> — new <code>metrics.test.ts</code> covers 11 scenarios: empty result, independent counts, dedup on repeat events, non-retention events ignored, each filter dimension, all three group-by dimensions, filter-and-group-by combined, and a high-volume single-player sanity check. <code>App.test.ts</code> gains two tests for the metrics table rendering and group-by breakdown.
+- Backend (pytest): <strong>12 tests / 95% coverage</strong> (unchanged).
+- E2E (Playwright): <strong>10 tests</strong> — added <code>renders the retention &amp; monetization metrics table</code> (asserts all four metric labels, n(players) is a real numeric, rates contain <code>%</code>) and <code>metrics table breaks out by group when group-by is active</code>.</p>
+<p>Ready for TASK-500 (experiment analysis) whenever you are.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-005.html#msg-2026-06-18T00-03-39-219Z"><div class="index-item-header"><span class="index-item-number">#22</span><time datetime="2026-06-18T00:03:39.219Z" data-timestamp="2026-06-18T00:03:39.219Z">2026-06-18T00:03:39.219Z</time></div><div class="index-item-content"><p>reread TODO.md and implement TASK-450 which I just added there.</p></div></a></div>
+<div class="index-item"><a href="page-005.html#msg-2026-06-18T00-04-18-559Z"><div class="index-item-header"><span class="index-item-number">#23</span><time datetime="2026-06-18T00:04:18.559Z" data-timestamp="2026-06-18T00:04:18.559Z">2026-06-18T00:04:18.559Z</time></div><div class="index-item-content"><p>reread TODO.md and implement TASK-450 which I just added there. also reread AGENTS.md; I updated the event log schema with a user_create_time column.</p></div></a><div class="index-item-stats"><span>10 bash · 10 edit · 2 read · 2 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Verified <code>[DONE]</code> on disk.</p>
+<p><strong>TASK-450 summary</strong></p>
+<p><strong>Discovery</strong> — the raw parquet has <strong>no <code>returned_Nd</code> events at all</strong> (top-10 event counts are all behavioral: <code>experiment_viewed</code>, <code>screen</code>, <code>problem_set_*</code>, etc.). My TASK-400 metrics table was therefore showing all-0% retention rates — TASK-450 makes those numbers real.</p>
+<p><strong>Schema update</strong> — added <code>user_create_time</code> to the <code>PlayerEvent</code> interface and to the Parquet column projection in <code>fetchEvents</code>.</p>
+<p><strong>Synthesis module</strong> — new <code>data/synthesize.ts</code> exporting <code>synthesizeRetentionEvents(events)</code>. For each player it:
+1. Collects the player's <code>screen</code> events and sorts them by <code>ts</code> once.
+2. For each <code>N ∈ {1, 2, 3, 5, 7}</code>, binary-searches the sorted screen events for the first one falling in the half-open window <code>[user_create_time + N·24h, user_create_time + (N+1)·24h)</code>.
+3. If found, emits a synthetic <code>returned_Nd</code> event borrowing the matched screen event's <code>ts</code> and the player's other attributes (country, platform, joinWeek, userCreateTime).</p>
+<p>Complexity is O(events) for the bucketing pass + O(P·log(S_p)) for the binary searches — fast even on the larger parquet files.</p>
+<p><strong>Wired into <code>App.vue</code></strong> — the load flow now reads <code>events.value = synthesizeRetentionEvents(await fetchEvents(filename))</code>. The synthesis runs once per file-load and the rest of the app (chart aggregation, retention metrics, filter/group-by, future TASK-500 experiment analysis) operates on the augmented log transparently.</p>
+<p><strong>Tests — all green</strong>
+- Frontend (<strong>vitest</strong>): <strong>77 tests / 6 files</strong> — new <code>synthesize.test.ts</code> with 11 cases covering: no screens → no synthesis, day-1/2/3/5/7 emission, half-open boundary semantics, dedup when a window has many screens, non-spec Ns ignored (day 4, day 6), all-five emission, non-screen events ignored, multi-player isolation, attribute inheritance, ts borrowing from first qualifying screen, and immutability of the input.
+- Backend (<strong>pytest</strong>): <strong>12 tests / 95% coverage</strong> (unchanged — synthesis is purely client-side).
+- E2E (<strong>Playwright</strong>): <strong>10 tests</strong> — the existing <code>renders the retention &amp; monetization metrics table</code> test now asserts the <code>returned_1d</code> rate is non-zero, which doubles as a regression guard for TASK-450's wiring. Also loosened the data-file listing tests (you've added <code>most</code>/<code>us</code> files) to check membership rather than exact set.</p>
+<p><strong>Bonus fix</strong> — the data-file listing e2e tests had hardcoded the original 2-file inventory; now they check <code>events-202605-ca.parquet</code> is present and that the listing is alphabetical, which survives future additions to <code>data/</code>.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-005.html#msg-2026-06-18T02-43-18-839Z"><div class="index-item-header"><span class="index-item-number">#24</span><time datetime="2026-06-18T02:43:18.839Z" data-timestamp="2026-06-18T02:43:18.839Z">2026-06-18T02:43:18.839Z</time></div><div class="index-item-content"><p>for the synthesis module - do we actually need to retain the full array of screensByPlayer? Since every event is populated with userCreateTime, can't we just instantly synthesize a returned_Nd once we see any event that fits in the time window? The per-player state to track would be whether or not we already emitted returned_Nd for that player (since we don't want to emit duplicates), but since the cardinality of (player,screen event) is much higher than (player,returned event), this seems like a net memory/time savings, hmm?</p></div></a><div class="index-item-stats"><span>2 bash · 1 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>You're absolutely right — and the savings are significant. Let me think through the trade-offs explicitly:</p>
+<p><strong>State comparison</strong> for the ca dataset:
+- Current: <code>Map&lt;userId, PlayerEvent[]&gt;</code> retaining all ~68k screen events.
+- Proposed: <code>Map&lt;userId, Set&lt;number&gt;&gt;</code> — at most 5 small numbers × ~1,200 players = ~6k tiny entries.</p>
+<p><strong>Time</strong>:
+- Current: 1 pass to bucket + sort each player's screens + 5 binary searches per player.
+- Proposed: 1 pass, constant work per event (floor-divide + Set lookup). No sort. No binary search.</p>
+<p><strong>Semantic trade-off</strong>: The <code>ts</code> on the synthetic event becomes "first-in-input-order in the window" rather than "earliest-by-ts in the window". For typical event logs (which are ts-sorted) these are the same. For the current usages (count of players in TASK-400, future per-variation rates in TASK-500), the synthetic event's <code>ts</code> doesn't matter at all.</p>
+<p>I'll go with your approach. Here's the rewrite.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>All 10 e2e tests pass — including the assertion that <code>returned_1d</code> rate is non-zero (synthesis still produces correct results on the real data).</p>
+<p><strong>Refactor summary</strong></p>
+<p>Before (~50 LoC + helper): bucket every player's screens, sort each bucket, do 5 binary searches per player.</p>
+<p>After (~30 LoC, no helper): single pass; for each <code>screen</code> event, compute <code>Math.floor((ts − createTime) / 86_400_000)</code> to get the candidate N in O(1), check it's in <code>{1,2,3,5,7}</code>, and emit unless we've already emitted that N for this player.</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Per-player state</td>
+<td><code>PlayerEvent[]</code> (all screens)</td>
+<td><code>Set&lt;number&gt;</code> (≤ 5 nums)</td>
+</tr>
+<tr>
+<td>Sort</td>
+<td>Yes, per player</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>Binary search × 5 per player</td>
+<td>Direct floor-divide</td>
+</tr>
+<tr>
+<td>Passes over events</td>
+<td>1 to bucket + N sorts</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Memory (ca dataset)</td>
+<td>~68k object refs across maps</td>
+<td>~6k tiny set entries</td>
+</tr>
+</tbody>
+</table>
+<p>Behavior preserved for the cases the tests pin: count of synthetic events per player, dedup within a window, half-open <code>[N, N+1)</code> boundary semantics, attribute inheritance from the player, immutability of input. All 77 unit tests + 10 e2e tests pass, and the real-data retention numbers (17.4% / 10.8% / 8.6% / 0.3% for day-1/2/3/sub-buy) are unchanged.</p>
+<p>The one subtle semantic shift: the synthetic event's <code>ts</code> is now "first-screen-encountered-in-input-order-within-the-window" rather than "min-ts-screen-within-the-window". For parquet files sorted by <code>ts</code> (the typical case), these are identical; if a future use ever needs strict min-ts semantics we can revisit, but no current consumer touches the synthetic event's <code>ts</code>.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-005.html#msg-2026-06-18T02-51-05-488Z"><div class="index-item-header"><span class="index-item-number">#25</span><time datetime="2026-06-18T02:51:05.488Z" data-timestamp="2026-06-18T02:51:05.488Z">2026-06-18T02:51:05.488Z</time></div><div class="index-item-content"><p>implement TASK-500</p></div></a><div class="index-item-stats"><span>17 edit · 6 bash · 4 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Re-reading TASK-500 carefully: this version folds experiment analysis into the existing <strong>group-by</strong> menu (experiments appear as additional choices alongside country/platform/join_week). When the user picks an experiment, the data flow is:</p>
+<ol>
+<li>Build a per-player <code>variation_id</code> assignment by taking the <strong>first non-control</strong> <code>experiment_viewed</code> event per <code>user_id_hash</code> (control is a dummy bucket; ignored entirely).</li>
+<li>Drop events for players with no assignment.</li>
+<li>Use <code>variation_id</code> as the group key for the chart and the metrics table.</li>
+</ol>
+<p>Country/platform/joinWeek filters still compose on top.</p>
+<h3>Plan</h3>
+<ul>
+<li><code>types.ts</code> — add <code>experimentId</code>/<code>variationId</code> to <code>PlayerEvent</code>; extend <code>GroupBy</code> with a template-literal arm <code>\</code>experiment:${string}``.</li>
+<li><code>data/experiment.ts</code> (new) — <code>computeVariationAssignments</code>, <code>uniqueExperimentIds</code>, plus an <code>experimentIdFromGroupBy</code> helper.</li>
+<li><code>data/parquet.ts</code> — project the two new columns.</li>
+<li><code>data/aggregate.ts</code> + <code>data/metrics.ts</code> — thread an optional <code>variationAssignments</code> map through (filter on it + use it as the group-key lookup when group-by is an experiment).</li>
+<li><code>FilterPanel.vue</code> — populate experiment options via <code>&lt;optgroup&gt;</code>.</li>
+<li><code>App.vue</code> — compute assignments, plumb to aggregators.</li>
+<li>Tests + e2e.</li>
+</ul>
+<p>Let me first peek at what experiments actually exist in the data.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Verified <code>[DONE]</code> on disk.</p>
+<p><strong>Summary of TASK-500</strong></p>
+<p><strong>Encoding</strong> — <code>GroupBy</code> is now <code>null | 'countryAgg' | 'platform' | 'joinWeek' | \</code>experiment:${string}`<code>. The experiment arm is a TypeScript template-literal type, so the discriminator is built into the type system. A</code>experimentIdFromGroupBy(groupBy)` helper centralizes the prefix parsing.</p>
+<p><strong>Data layer</strong> — new <code>data/experiment.ts</code>:
+- <code>computeVariationAssignments(events, id)</code> — for each player, picks the <strong>first non-control</strong> <code>experiment_viewed</code> event for <code>id</code> by ts (sticky-from-first-exposure semantics). Players who only saw <code>control</code> (the dummy bucket) are absent from the map; so are players who never saw the experiment.
+- <code>uniqueExperimentIds(events)</code> — sorted distinct values, ignoring empty strings and events that aren't <code>experiment_viewed</code>.</p>
+<p><strong>Threaded through</strong> — <code>applyFilters</code>, <code>bucketByHour</code>, <code>screenEventsByHour</code>, and <code>computeRetentionMetrics</code> all gained an optional <code>variationAssignments</code> parameter. In <code>applyFilters</code> it acts as an additional player-level filter (drop unassigned). In the bucketers and metrics, the variation_id from the map becomes the group key whenever the group-by is an experiment. Country/platform/joinWeek filters still compose on top — matching the spec's "in addition to all existing filtering".</p>
+<p><strong>UI</strong> — <code>FilterPanel.vue</code> renders experiment options inside an <code>&lt;optgroup label="experiment"&gt;</code> after the three dimension options. The label is the raw experiment_id (33 entries in the ca dataset, sorted alphabetically). <code>App.vue</code> derives <code>variationAssignments</code> reactively and plumbs it through to the chart and metrics. The Tufte-style table layout from TASK-400 carries straight over — variations become column headers.</p>
+<p><strong>Schema</strong> — added <code>experimentId</code> and <code>variationId</code> to <code>PlayerEvent</code> (empty strings for non-<code>experiment_viewed</code> rows). Parquet projection now includes the two columns.</p>
+<p><strong>Real-data sanity check</strong> — selecting <code>sub_sku_annual_only</code> on the ca dataset gives:</p>
+<pre><code>                 off          on
+n (players)      406          786
+returned_1d      18.5% (75)   16.9% (133)
+returned_2d      12.1% (49)   10.2% (80)
+returned_3d       9.1% (37)    8.3% (65)
+sub_buy_success   0.5% (2)     0.3% (2)
+</code></pre>
+<p>(The "on" variation appears to slightly <em>lower</em> sub_buy_success in this sample — TASK-510's chi-square test will tell us whether that's signal or noise.)</p>
+<p><strong>Tests — all green</strong>
+- Frontend (<strong>vitest</strong>): <strong>96 tests / 7 files</strong> — new <code>experiment.test.ts</code> with <strong>13 cases</strong> (encoding round-trip, sticky-first by ts, control-as-dummy-handling, single-experiment isolation, ignoring screen events tagged with experiment_id, empty variation_id, uniqueExperimentIds sorting/filtering). <code>aggregate.test.ts</code> and <code>metrics.test.ts</code> gained dedicated experiment-mode test groups. <code>App.test.ts</code> got two new tests: experiment options appear in the group-by dropdown, and selecting one breaks the metrics table out by variation with control players excluded.
+- Backend (<strong>pytest</strong>): <strong>12 tests / 95% coverage</strong> (unchanged — experiment analysis is purely client-side).
+- E2E (<strong>Playwright</strong>): <strong>11 tests</strong> — added <code>group-by lists experiments and selecting one breaks metrics out by variation</code>, which exercises the full real-data flow against <code>sub_sku_annual_only</code> and asserts both variations have non-zero player counts.</p>
+<p>Ready for TASK-510 (chi-square significance test) whenever you are.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-006.html#msg-2026-06-18T02-58-58-162Z"><div class="index-item-header"><span class="index-item-number">#26</span><time datetime="2026-06-18T02:58:58.162Z" data-timestamp="2026-06-18T02:58:58.162Z">2026-06-18T02:58:58.162Z</time></div><div class="index-item-content"><p>implement TASK-510</p></div></a><div class="index-item-stats"><span>14 edit · 7 bash · 3 write · 1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>TASK-510: in experiment mode, for each retention metric, build a contingency table (variations × {accomplished, didn't}) and run a chi-square test of independence. Show the p-value alongside each metric row.</p>
+<h3>Approach</h3>
+<ul>
+<li><strong>Math</strong>: implement chi-square test of independence + chi-square CDF (via regularized upper incomplete gamma — series for <code>x &lt; a+1</code>, continued fraction otherwise, Lanczos for <code>lgamma</code>). No new dependency.</li>
+<li><strong>Wiring</strong>: <code>App.vue</code> computes per-metric <code>ChiSquareResult</code> only when in experiment mode and ≥ 2 variations remain after filtering. Pass to <code>MetricsTable.vue</code> as an optional prop.</li>
+<li><strong>Display</strong>: extra rightmost column "p-value" — formatted with 3 sig figs, bold when &lt; 0.05, "—" for the <code>n (players)</code> row.</li>
+</ul>
+<h3>1. Chi-square math module + tests</h3></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Real-data chi-square output looks correct: for <code>sub_sku_annual_only</code> all four p-values are &gt;&gt; 0.05 (no significant difference between off/on), which matches the small effect sizes and limited sample (only 4 total sub_buy successes overall — way below the cell-count threshold for which chi-square is reliable for that particular metric).</p>
+<p>Marking TASK-510 done.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Verified <code>[DONE]</code> on disk. (Noted TASK-600 is now in the queue — performance/loading work for medium-and-larger datasets.)</p>
+<p><strong>TASK-510 summary</strong></p>
+<p><strong>Math</strong> — self-contained <code>data/chisquare.ts</code> (~100 LoC, no new dep):
+- <code>chiSquareTest(table)</code> — Pearson chi-square of independence on an <code>rows × cols</code> contingency table; computes row/col totals, expected cell values, and <code>Σ (O−E)² / E</code>.
+- <code>chiSquarePValue(chi2, df)</code> — upper-tail P(X ≥ chi2) for χ²(df), via the regularized upper incomplete gamma <code>Q(df/2, chi2/2)</code>. Series expansion for <code>x &lt; a+1</code>, Lentz continued fraction otherwise, Lanczos approximation for <code>lgamma</code> (with reflection formula for <code>z &lt; ½</code>).
+- Verified against textbook critical values: <code>χ²=3.841, df=1 → p=0.05</code>; <code>χ²=6.635, df=1 → p=0.01</code>; <code>χ²=5.991, df=2 → p=0.05</code>; and the Wikipedia handedness×gender example (<code>χ² ≈ 1.78, p ≈ 0.18</code>).</p>
+<p><strong>Wiring</strong> — <code>data/metrics.ts</code> exports <code>chiSquareForMetric(metrics, event)</code>: builds a <code>variations × {accomplished, did-not-accomplish}</code> contingency table and runs <code>chiSquareTest</code>. Returns <code>null</code> when fewer than 2 groups exist (e.g., an experiment with only <code>control</code> + one variation collapses to a single non-control bucket, so no comparison is possible).</p>
+<p><strong>UI</strong> — <code>MetricsTable.vue</code> accepts a <code>chiSquare?: Record&lt;RetentionEvent, ChiSquareResult | null&gt;</code> prop. When provided it renders an extra rightmost column with a hairline left border:
+- "p‑value" header (uses U+2011 non-breaking hyphen to prevent line wrap)
+- Cell format: <code>0.317</code>, <code>&lt;0.001</code>, <code>&gt;0.999</code>, or <code>—</code> (for the n-row)
+- Bold + full-ink color when <code>p &lt; 0.05</code>; muted gray otherwise
+- Figcaption explains the test and significance threshold</p>
+<p><code>App.vue</code> computes the per-metric chi-square results reactively, but only in experiment-analysis mode and only when ≥ 2 variations remain after dropping control-only players. Country/platform/joinWeek grouping doesn't get the p-value column per spec — though the math would work fine there too if you want to enable it later.</p>
+<p><strong>Real-data verification</strong> — for <code>sub_sku_annual_only</code> (the experiment the spec calls out as targeting <code>sub_buy_success</code>):</p>
+<pre><code>                off          on           p-value
+n (players)     406          786          —
+returned_1d     18.5% (75)   16.9% (133)  0.504
+returned_2d     12.1% (49)   10.2% (80)   0.319
+returned_3d      9.1% (37)    8.3% (65)   0.622
+sub_buy_success  0.5% (2)     0.3% (2)    0.500
+</code></pre>
+<p>All p-values &gt;&gt; 0.05 → no statistically significant difference detectable at this sample size. The sub_buy_success row in particular only has 4 total successes across both arms, well below the expected-cell-count ≥ 5 rule of thumb, so that p-value is unreliable; the math is right but the test isn't really powered for that metric on this dataset.</p>
+<p><strong>Tests — all green</strong>
+- Frontend (<strong>vitest</strong>): <strong>122 tests / 8 files</strong>
+  - New <code>chisquare.test.ts</code> (18 cases): table critical values for df=1/2/3 (matching textbook to 3 decimal places), monotonicity, invalid-argument rejection, 2×2 / 3×2 / 3×3 contingency, Wikipedia handedness example, perfect-independence sanity, empty-table edge case.
+  - New <code>chiSquareForMetric</code> test block in <code>metrics.test.ts</code> (6 cases): null for &lt;2 groups, null for empty groups, p≈1 for equal rates, very-small p for engineered strong difference, df scaling with groups, unequal group sizes.
+  - <code>App.test.ts</code>: 2 new tests — engineered strong difference renders <code>&lt;0.001</code>, and <code>countryAgg</code> group-by has no p-value column.
+- Backend (<strong>pytest</strong>): <strong>12 tests / 95% coverage</strong> (unchanged — math is client-side).
+- E2E (<strong>Playwright</strong>): <strong>12 tests</strong> — <code>group-by lists experiments...</code> extended to assert the p-value column exists, has correct format (<code>&lt;0.001</code> or <code>0.xxx</code>), and is present in 4 rows. New <code>p-value column is hidden for non-experiment group-by</code> confirms the column disappears on <code>countryAgg</code>.</p>
+<p>Ready for TASK-600 (perf / loading UX for medium and large datasets) when you are.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-006.html#msg-2026-06-18T03-08-39-836Z"><div class="index-item-header"><span class="index-item-number">#27</span><time datetime="2026-06-18T03:08:39.836Z" data-timestamp="2026-06-18T03:08:39.836Z">2026-06-18T03:08:39.836Z</time></div><div class="index-item-content"><p>do TASK-600</p></div></a><div class="index-item-stats"><span>16 edit · 8 bash · 8 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Dataset sizes: <strong>ca</strong> 178k rows, <strong>us</strong> 1.4M, <strong>most</strong> 6M, <strong>full</strong> 10.5M. With current PlayerEvent[] (Date fields), the full dataset would need ~4 GB just for the array — that explains the crash.</p>
+<p>Plan for TASK-600:
+1. <strong>Move loading to a Web Worker</strong> so the UI never freezes; emit progress messages.
+2. <strong>Convert <code>PlayerEvent</code> timestamps from <code>Date</code> → <code>number</code></strong> (ms since epoch). Three Dates per row × 10.5M rows × ~48B saves ~1.5 GB on the full dataset and speeds aggregation.
+3. <strong><code>shallowRef</code></strong> for the events array (avoid deep Vue reactivity on millions of objects).
+4. <strong>Progress bar UI</strong> with phase + percent.
+5. <strong>Hot-path optimizations</strong>: <code>floorToHour</code> and <code>joinWeekKey</code> work on ms (no per-iteration <code>Date</code> allocation); use nested <code>Map&lt;group, Map&lt;hour, count&gt;&gt;</code> instead of string keys to avoid millions of temporary strings.
+6. <strong>e2e test that hits the medium dataset</strong> (us, 1.4M rows) without freezing.</p>
+<p>This should make medium fully usable; full is a stretch we can address in a follow-up if needed (it'd require columnar storage).</p>
+<h3>1. Convert timestamps to numbers</h3></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-006.html#msg-2026-06-18T03-23-49-259Z"><div class="index-item-header"><span class="index-item-number">#28</span><time datetime="2026-06-18T03:23:49.259Z" data-timestamp="2026-06-18T03:23:49.259Z">2026-06-18T03:23:49.259Z</time></div><div class="index-item-content"><p>[Request interrupted by user]</p></div></a></div>
+<div class="index-item"><a href="page-006.html#msg-2026-06-18T03-23-55-832Z"><div class="index-item-header"><span class="index-item-number">#29</span><time datetime="2026-06-18T03:23:55.832Z" data-timestamp="2026-06-18T03:23:55.832Z">2026-06-18T03:23:55.832Z</time></div><div class="index-item-content"><p>continue</p></div></a><div class="index-item-stats"><span>12 bash · 4 edit · 1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p><code>most</code> dataset fails because <code>postMessage</code> of a 6M-row PlayerEvent array exceeds the structuredClone size limit. The full dataset fails even earlier — at hyparquet's internal decode.</p>
+<p>Real Phase 2 fix requires columnar storage (typed arrays transferred via transferable buffers). That's a substantial refactor. Let me first try one quick low-risk win: switch from <code>parquetReadObjects</code> (per-row JS object) to <code>parquetRead</code> (per-row plain array). Array rows are smaller and might push us into the <code>most</code> dataset.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p><code>parquetRead</code> didn't move the needle much — bottlenecks are postMessage size for <code>most</code> and decode OOM for <code>full</code>. Both require true columnar storage to fix. That's a substantial follow-on refactor.</p>
+<p>Given the scope, I'll ship the Phase 1 fix that handles <strong>medium completely</strong> and <strong>larger datasets gracefully</strong> (graceful error instead of "Oh snap" crash), then document the columnar follow-up.</p>
+<p>Let me make sure the test suite is still green.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>TASK-600 marked <code>[DONE]</code> on disk.</p>
+<p><strong>Summary of TASK-600</strong></p>
+<p><strong>Wins</strong>
+- <strong>Web Worker</strong> (<code>src/workers/load.worker.ts</code>) does all the heavy work — parquet decode, normalize-to-PlayerEvent, retention-event synthesis — so the main thread never freezes. Vite's <code>?worker</code> import syntax handles bundling.
+- <strong>Progress bar</strong> (<code>ProgressBar.vue</code>) shows current phase ("decoding columns", "normalizing 1,387,622 events", "synthesizing retention events", "ready") with a percent that ticks through 0→100. Worker posts ~10 messages during a large load.
+- <strong><code>PlayerEvent</code> ts/userCreateTime/joinWeek → <code>number</code></strong> (ms since epoch). Three <code>Date</code> objects per row at ~48 B each × 10.5M = ~1.5 GB freed; eliminates per-event <code>Date</code> allocation in every aggregation pass.
+- <strong><code>shallowRef</code></strong> for the events array. Prevents Vue from wrapping each event in a reactive Proxy — that alone was prohibitive at ≥1M rows.
+- <strong>Hot-loop optimizations</strong>: <code>floorToHour</code> is now <code>Math.floor(ts / 3_600_000) * 3_600_000</code> (no <code>Date</code> allocation); <code>joinWeekKey</code> is memoized (only ~5 distinct values in a month-long file); grouping uses <code>Map&lt;group, Map&lt;hourMs, count&gt;&gt;</code> instead of <code>${group}\x00${hour}</code> string keys (no per-event temporary strings).
+- <strong>Hyparquet API</strong>: switched from <code>parquetReadObjects</code> (per-row JS object) to <code>parquetRead</code> (per-row plain array), and the worker zeroes out each source row immediately after copying into the normalized event so the GC can reclaim it during the conversion pass.</p>
+<p><strong>Verified outcomes on real datasets</strong>
+| Dataset | Rows | Players | Before | After |
+|---|---|---|---|---|
+| ca | 178k | 1.2k | works | works |
+| us (medium) | 1.4M | 8.9k | <strong>freeze + "unresponsive"</strong> | <strong>2s load, progress bar, no freeze</strong> |
+| most | 6M | 31k | crash | graceful error ("postMessage clone OOM") |
+| full (large) | 10.5M | 64k | <strong>"Oh snap!" crash</strong> | graceful error ("Failed to fetch" in worker decode) |</p>
+<p><strong>Known limitation (documented in TODO)</strong> — <code>most</code> and <code>full</code> still hit memory ceilings. <code>most</code> errors at the worker→main <code>postMessage</code> step (structured-clone size cap); <code>full</code> errors earlier, inside hyparquet's decode pass. Both now fail with a tidy error banner rather than crashing the tab. <strong>Truly fixing these</strong> requires columnar storage in the worker (typed arrays transferred via transferable buffers) plus rewriting the aggregations to operate column-wise — substantial enough to warrant a separate task, which I've called out in the <code>Known limitation</code> note under TASK-600 in TODO.md.</p>
+<p><strong>Tests — all green</strong>
+- Frontend (<strong>vitest</strong>): <strong>122 tests / 8 files</strong>. All fixtures migrated from <code>Date</code> to <code>number</code> timestamps; new <code>parquet.test.ts</code> covers <code>toMs</code> across the bigint/number/Date/ISO paths.
+- Backend (<strong>pytest</strong>): <strong>12 tests / 95% coverage</strong> (unchanged — backend is untouched).
+- E2E (<strong>Playwright</strong>): <strong>13 tests</strong> — added <code>loads the medium dataset without freezing the UI, showing a progress bar</code> which (a) selects <code>events-202605-us.parquet</code>, (b) verifies the progress bar appears within 5s, (c) confirms the main thread stays responsive <em>during</em> the load via a synchronous <code>page.evaluate(() =&gt; document.title)</code>, and (d) waits for the chart to render with the ~8.9k player count.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-006.html#msg-2026-06-18T03-36-32-075Z"><div class="index-item-header"><span class="index-item-number">#30</span><time datetime="2026-06-18T03:36:32.075Z" data-timestamp="2026-06-18T03:36:32.075Z">2026-06-18T03:36:32.075Z</time></div><div class="index-item-content"><p>to get around postMessage clone OOM, what if we streamed the PlayerEvent[] data in chunks instead of all at once?</p></div></a><div class="index-item-stats"><span>5 edit · 4 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Great idea — streaming chunks would absolutely sidestep the postMessage clone size cap. Each cloned chunk is small enough to fit easily, and main-thread heap can still hold the assembled <code>PlayerEvent[]</code> (the size limit on a <em>single</em> clone is well below the main heap budget). It won't fix <code>full</code> (which OOMs inside hyparquet's decode before we ever get to postMessage), but it should unlock <code>most</code>. Let me implement.</p>
+<h3>1. Worker streams chunks</h3></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Confirmed. <strong>Streaming chunks unlocked the 6M-row dataset.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Rows</th>
+<th>Players</th>
+<th>Before TASK-600</th>
+<th>After Phase 1</th>
+<th>After streaming</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ca</td>
+<td>178k</td>
+<td>1.2k</td>
+<td>works</td>
+<td>works</td>
+<td>works</td>
+</tr>
+<tr>
+<td>us (medium)</td>
+<td>1.4M</td>
+<td>8.9k</td>
+<td><strong>freeze</strong></td>
+<td>2.2s ✓</td>
+<td>2.2s ✓</td>
+</tr>
+<tr>
+<td>most</td>
+<td>6M</td>
+<td>31k</td>
+<td>crash</td>
+<td>clone OOM error</td>
+<td><strong>5.9s ✓</strong></td>
+</tr>
+<tr>
+<td>full (large)</td>
+<td>10.5M</td>
+<td>64k</td>
+<td><strong>"Oh snap!"</strong></td>
+<td>fetch error</td>
+<td>fetch error (decode OOM)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>How the streaming fix works</strong> (<code>workers/load.worker.ts</code> + <code>data/parquet.ts</code>):</p>
+<ul>
+<li>Worker output replaces the single <code>{ type: 'done', events }</code> with a 3-part stream: <code>streamStart{total}</code> → many <code>streamChunk{offset, events}</code> → <code>streamEnd</code>.</li>
+<li>Each chunk is 100k events (~25 MB cloned), well under any browser's per-message structured-clone cap. The cap is on a <strong>single</strong> clone, not the total transferred over the worker's lifetime.</li>
+<li>Worker frees each sent chunk's source slots (<code>withSynthetic.fill(undefined, off, end)</code>) immediately after the <code>postMessage</code> returns, so worker peak memory doesn't double during transfer.</li>
+<li>Main thread pre-allocates <code>new Array(total)</code> from the <code>streamStart</code> size, then copies each chunk's items into place via tight <code>for</code> loop. No <code>Array.prototype.concat</code> (which would reallocate).</li>
+<li>Progress messages continue during streaming (90→100%, "transferring") so the bar keeps moving.</li>
+</ul>
+<p><strong>Why <code>full</code> still fails</strong> — it errors at ~1.8s with "Failed to fetch" coming out of <code>parquetRead</code>. That's not the postMessage path — it's hyparquet's decode itself running out of room in the worker heap (10.5M rows × 9 columns of decompressed buffers is just too much to materialize all at once). The streaming change can't help there. The next-step fix would be to read columns one at a time (<code>parquetReadColumn</code>) into typed-array buffers, never materializing a JS object per row — but that requires the columnar aggregation refactor I described in the TODO note.</p>
+<p><strong>Tests</strong>
+- Frontend (vitest): 122/122 unchanged (worker is mocked in App.test).
+- E2E (Playwright): <strong>14 tests</strong> — added <code>loads the 6M-row "most" dataset via chunked streaming</code> which selects the most file, waits up to 3 minutes, asserts no error banner appears, and verifies the players-count cell contains a 5-digit number (tens of thousands). Run takes ~6s end-to-end.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-007.html#msg-2026-06-18T03-42-20-551Z"><div class="index-item-header"><span class="index-item-number">#31</span><time datetime="2026-06-18T03:42:20.551Z" data-timestamp="2026-06-18T03:42:20.551Z">2026-06-18T03:42:20.551Z</time></div><div class="index-item-content"><p>dig more into the parquetRead issue. Is there some streaming version of this API that delivers a few rows at a time, instead of the entire dataset at once? If so we could probably get around the OOM without a full columnar refactor</p></div></a><div class="index-item-stats"><span>13 bash · 6 edit · 1 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Perfect setup — 211 row groups of 50k rows each. The plan is to read <strong>one batch of row groups at a time</strong> via <code>parquetRead({rowStart, rowEnd, metadata})</code>, doing synthesis on-the-fly with per-player state kept across batches. This way the worker never holds more than one batch's worth of decoded data at once.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Beautiful — all 6xx and below tasks DONE. <strong>All four datasets now load successfully</strong>, including the previously-crashing 10.5M-row full dataset in 9 seconds.</p>
+<h3>Streaming-parquet summary</h3>
+<p><strong>The change</strong>: instead of one <code>parquetRead({...})</code> that decodes the whole file into memory, the worker now:
+1. Reads metadata once via <code>parquetMetadataAsync(file)</code>.
+2. Walks <code>metadata.row_groups[]</code> in groups of 10 (~500k rows per batch).
+3. For each batch, calls <code>parquetRead({rowStart, rowEnd, metadata, columns, onComplete})</code> — only the row groups overlapping that range are decoded.
+4. Normalizes the batch into <code>PlayerEvent</code> objects <strong>and</strong> synthesizes <code>returned_Nd</code> events in-line during the same pass (per-player emission state is a <code>Map&lt;userIdHash, Set&lt;number&gt;&gt;</code> kept across batches, so we don't re-emit a <code>returned_1d</code> just because a player's screens span a batch boundary).
+5. Flushes to the main thread in 100k-row postMessage chunks. Previous batch's decode buffers go out of scope and get GC'd before the next batch runs.</p>
+<p><strong>Plus a defensive schema check</strong>: optional columns (currently just <code>user_create_time</code>) get omitted from the projection when missing, and synthesis is skipped. The full dataset happens to be missing it, so it loads with <code>returned_Nd</code> rates at 0% but everything else (chart, filters, group-by, experiments, <code>sub_buy_success</code>) works correctly.</p>
+<h3>Verified end-to-end load times</h3>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Rows</th>
+<th>Players</th>
+<th>TASK-600 baseline</th>
+<th>Final</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ca</td>
+<td>178k</td>
+<td>1.2k</td>
+<td>works</td>
+<td>works</td>
+</tr>
+<tr>
+<td>us (medium)</td>
+<td>1.4M</td>
+<td>8.9k</td>
+<td><strong>freeze + crash</strong></td>
+<td><strong>1.6 s</strong> ✓</td>
+</tr>
+<tr>
+<td>most</td>
+<td>6M</td>
+<td>31k</td>
+<td>clone OOM</td>
+<td><strong>5.1 s</strong> ✓</td>
+</tr>
+<tr>
+<td>full (large)</td>
+<td>10.5M</td>
+<td>64k</td>
+<td><strong>"Oh snap!"</strong></td>
+<td><strong>9.2 s</strong> ✓</td>
+</tr>
+</tbody>
+</table>
+<h3>Tests</h3>
+<ul>
+<li>Frontend (vitest): <strong>122/122 unchanged</strong> — the synthesize.ts module still has its full test suite even though the worker now inlines an equivalent pass (kept around for the standalone synthesis pathway and as a reference).</li>
+<li>E2E (Playwright): <strong>15 tests</strong> — added <code>loads the 10.5M-row "full" dataset via row-group-batched decode</code> which selects the full file and waits up to 4 minutes (passes in ~8s).</li>
+</ul></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-007.html#msg-2026-06-18T04-04-29-993Z"><div class="index-item-header"><span class="index-item-number">#32</span><time datetime="2026-06-18T04:04:29.993Z" data-timestamp="2026-06-18T04:04:29.993Z">2026-06-18T04:04:29.993Z</time></div><div class="index-item-content"><p>FYI I updated the "full" dataset to include the user_create_time column; that omission was a mistake. So you don't need the OPTIONAL_COLUMNS special case nor <code>hasUserCreateTime</code> check; remove those. "Cache column indices into locals" - is that really necessary? seems like an excessive micro-optimization. Finally, if src/data/synthesize.ts is now dead code, we should remove it, and transfer the relevant doc comments into load.worker.ts.</p></div></a><div class="index-item-stats"><span>4 bash · 1 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>All 15 e2e tests pass (full dataset still loads in ~8s with the cleanup).</p>
+<p><strong>Cleanup summary</strong> of <code>workers/load.worker.ts</code>:</p>
+<ul>
+<li><strong>Removed <code>OPTIONAL_COLUMNS</code> / <code>DESIRED_COLUMNS</code> / schema sniffing</strong>: restored the single fixed <code>COLUMNS</code> constant with positional <code>COL_TS=0</code> etc. indices. <code>user_create_time</code> is now required like every other column.</li>
+<li><strong>Removed <code>projectedColumns</code> array and the per-batch <code>colIndex</code> lookup object</strong>.</li>
+<li><strong>Removed the per-batch "cache column indices into locals" block</strong> (<code>ixTs = colIndex.ts</code>, etc.). With static positional constants those locals were redundant.</li>
+<li><strong>Removed <code>hasUserCreateTime</code> runtime check</strong> around synthesis — the column is guaranteed present, so the synthesis condition collapses back to <code>ev.event === 'screen' &amp;&amp; ev.userIdHash</code>.</li>
+<li><strong>Deleted <code>src/data/synthesize.ts</code> and <code>tests/synthesize.test.ts</code></strong> (dead code; the worker has its own in-line synthesis with the same semantics).</li>
+<li><strong>Moved the synthesis spec comment</strong> from the deleted file into a block comment next to the <code>DAY_MS</code>/<code>RETENTION_DAYS</code> constants in the worker — same window/borrowing rules, just framed for the streaming context.</li>
+</ul>
+<p>Diff stats: worker shrank from ~210 lines to ~190; ~140 lines of dead code (synthesize.ts + its test) removed entirely.</p>
+<p><strong>Tests</strong>
+- Frontend (vitest): <strong>111/111</strong> (was 122, minus the 11 synthesize tests).
+- E2E (Playwright): <strong>15/15</strong>, including the full-dataset load.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-007.html#msg-2026-06-18T04-10-52-575Z"><div class="index-item-header"><span class="index-item-number">#33</span><time datetime="2026-06-18T04:10:52.575Z" data-timestamp="2026-06-18T04:10:52.575Z">2026-06-18T04:10:52.575Z</time></div><div class="index-item-content"><p>do TASK-700</p></div></a><div class="index-item-stats"><span>9 edit · 7 bash · 1 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>TASK-700 marked <code>[DONE]</code> on disk.</p>
+<p><strong>TASK-700 summary</strong></p>
+<ol>
+<li>
+<p><strong>Subtitle removed, explainer added.</strong> <code>App.vue</code> no longer has the italic "Hourly screen-event traffic" subtitle. In its place, a <code>.explainer</code> <code>&lt;p&gt;</code> (data-testid="explainer") below the title holds the first Design paragraph from AGENTS.md verbatim. The explainer is capped at <code>max-width: 44rem</code> for a readable measure (~60 chars), regardless of how wide the page gets.</p>
+</li>
+<li>
+<p><strong>Y-axis label.</strong> <code>&lt;TimeSeriesChart y-label="activity"&gt;</code> (was <code>"screen events / hour"</code>).</p>
+</li>
+<li>
+<p><strong>Legend below chart.</strong> Plot's built-in legend is disabled (no more <code>color: { legend: true }</code>). Instead, <code>TimeSeriesChart.vue</code> reads back the resolved color scale via <code>chart.scale('color')</code> and renders its own Vue legend right under the chart's plotting area (left-aligned to match the chart's <code>marginLeft: 56</code>). With the explicit <code>color: { domain: allGroups }</code> setting, colors stay stable across re-renders even when some series are hidden.</p>
+</li>
+<li>
+<p><strong>Clickable legend (Grafana-style focus).</strong></p>
+</li>
+<li>Click an item → all other series hidden, that one stays.</li>
+<li>Click the same item again → all restored.</li>
+<li>Click a <em>different</em> item → focus switches.</li>
+<li>Hidden items get <code>opacity: 0.35</code> and a strike-through label.</li>
+<li>
+<p>Buttons are real <code>&lt;button&gt;</code> elements with <code>:aria-pressed</code> and a <code>focus-visible</code> outline, so keyboard navigation works.</p>
+</li>
+<li>
+<p><strong>Responsive layout.</strong> <code>.page</code> switched from <code>max-width: 56rem</code> to <code>max-width: 96rem</code> with <code>padding: 0 clamp(1rem, 4vw, 3rem)</code>. Chart and table now expand to fill the available width. Verified at 800 / 1280 / 1920 viewports: chart goes 736 / 1184 / 1536 px while the explainer stays at 704 px.</p>
+</li>
+</ol>
+<p><strong>Tests</strong>
+- Frontend (vitest): <strong>111/111</strong> — the "renders the title and subtitle" test renamed to "renders the title and explainer" and now asserts on the explainer's <code>data-testid</code> containing the AGENTS.md opening phrase.
+- E2E (Playwright): <strong>16 tests</strong> — one updated to point at the new <code>[data-testid="legend"]</code> instead of the old in-SVG swatches; one new test (<code>time-series chart legend is below the chart and is clickable to focus a series</code>) drives the full Grafana-style focus interaction:
+  - Asserts no legend in the default (ungrouped) state
+  - Switches to <code>group by: platform</code>, asserts the legend appears
+  - Verifies legend's bounding-rect <code>top</code> &gt; chart's <code>top</code> (it's below the chart)
+  - Clicks the first item, asserts N−1 items get <code>.inactive</code>
+  - Clicks it again, asserts all items restored</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-007.html#msg-2026-06-18T04-24-50-265Z"><div class="index-item-header"><span class="index-item-number">#34</span><time datetime="2026-06-18T04:24:50.265Z" data-timestamp="2026-06-18T04:24:50.265Z">2026-06-18T04:24:50.265Z</time></div><div class="index-item-content"><ul>
+<li>The width of the "explainer" textbox should also expand horizontally in response to browser width. - At the top of the filter panel, add the text "Filter Players:". - Add a title above the time-series chart "Player activity". - At the top of the metrics table, add the text "Retention &amp; Monetization Metrics:".</li>
+</ul></div></a><div class="index-item-stats"><span>9 edit · 3 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>All four refinements verified across viewports:</p>
+<table>
+<thead>
+<tr>
+<th>Viewport</th>
+<th>Explainer width</th>
+<th>Filter label</th>
+<th>Chart title</th>
+<th>Metrics label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1920px</td>
+<td><strong>1536px</strong></td>
+<td>"Filter Players:"</td>
+<td>"Player activity"</td>
+<td>"Retention &amp; Monetization Metrics:"</td>
+</tr>
+<tr>
+<td>1280px</td>
+<td><strong>1184px</strong></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>800px</td>
+<td><strong>736px</strong></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Summary of changes</strong></p>
+<ol>
+<li>
+<p><strong><code>.explainer</code> max-width removed</strong> — text now expands with the page width (was capped at 44rem, now flows to the same width as everything else).</p>
+</li>
+<li>
+<p><strong><code>FilterPanel.vue</code></strong> — <code>&lt;h2 class="section-label"&gt;Filter Players:&lt;/h2&gt;</code> added above the controls. Multi-root template works fine in Vue 3 — App.vue passes only props/events to FilterPanel, no fall-through class/style attrs that would need a single root.</p>
+</li>
+<li>
+<p><strong><code>TimeSeriesChart.vue</code></strong> — new optional <code>title</code> prop. When provided, renders <code>&lt;h2 class="chart-title"&gt;{{ title }}&lt;/h2&gt;</code> above the chart SVG. App.vue passes <code>title="Player activity"</code>.</p>
+</li>
+<li>
+<p><strong><code>MetricsTable.vue</code></strong> — <code>&lt;h2 class="section-label"&gt;Retention &amp;amp; Monetization Metrics:&lt;/h2&gt;</code> added inside the <code>&lt;figure&gt;</code>, before the table.</p>
+</li>
+</ol>
+<p>All three section headers use the same styling: serif italic at 1.1rem in <code>--ink-muted</code> color (subordinate to the main <code>Player Insights</code> h1 but more prominent than body text). Consistent visual rhythm across the three sections.</p>
+<p><strong>Tests</strong>: 111/111 frontend + 16/16 e2e still passing.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-007.html#msg-2026-06-18T04-29-52-040Z"><div class="index-item-header"><span class="index-item-number">#35</span><time datetime="2026-06-18T04:29:52.040Z" data-timestamp="2026-06-18T04:29:52.040Z">2026-06-18T04:29:52.040Z</time></div><div class="index-item-content"><p>don't use italic on the h2 section labels and on the metrics row text like "returned_1d".</p></div></a><div class="index-item-stats"><span>4 edit · 1 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>111/111 frontend tests pass. Removed <code>font-style: italic</code> from four CSS rules:</p>
+<ul>
+<li><code>FilterPanel.vue</code> <code>.section-label</code> ("Filter Players")</li>
+<li><code>MetricsTable.vue</code> <code>.section-label</code> ("Retention &amp; Monetization Metrics")</li>
+<li><code>MetricsTable.vue</code> <code>tbody th</code> (row labels: <code>n (players)</code>, <code>returned_1d</code>, <code>returned_2d</code>, <code>returned_3d</code>, <code>sub_buy_success</code>)</li>
+<li><code>TimeSeriesChart.vue</code> <code>.chart-title</code> ("Player activity")</li>
+</ul>
+<p>All three section headers and the metrics row labels now render upright. The rest of the italic emphasis (filter dimension labels <code>country</code> / <code>platform</code> / <code>join_week</code> / <code>group by</code>, column headers, the chart <code>source</code> label, captions) is unchanged.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-008.html#msg-2026-06-18T04-50-41-468Z"><div class="index-item-header"><span class="index-item-number">#36</span><time datetime="2026-06-18T04:50:41.468Z" data-timestamp="2026-06-18T04:50:41.468Z">2026-06-18T04:50:41.468Z</time></div><div class="index-item-content"><ul>
+<li>move the "source" selector below the explainer text. - make the explainer text appear in separate paragraphs, broken on the \n\n separators in App.vue. - In the explainer text, make the URL link to https://badukpop.com a clickable hyperlink.</li>
+</ul></div></a><div class="index-item-stats"><span>12 bash · 5 edit · 4 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>All 16 e2e tests pass.</p>
+<p><strong>Summary of the three changes</strong></p>
+<ol>
+<li>
+<p><strong>Source selector below explainer</strong> — restructured the <code>&lt;header&gt;</code> from a flex <code>title-row</code> (h1 + source side-by-side) to a stacked layout: <code>&lt;h1&gt;</code> → explainer <code>&lt;div&gt;</code> → <code>&lt;label class="source-control"&gt;</code>. Added <code>margin-top: 1.25rem</code> on <code>.source-control</code> so it sits comfortably below the explainer prose. The <code>.title-row</code> class is left in the stylesheet (with a "legacy" comment) but no longer applied — easy to remove later if you want.</p>
+</li>
+<li>
+<p><strong>Multi-paragraph explainer with linkified URLs</strong> — new <code>explainerParagraphs</code> computed property in App.vue that splits the raw string on <code>\n\n+</code> and, within each paragraph, finds <code>https?://...</code> URLs (regex stops at whitespace or <code>)</code> so trailing punctuation isn't swallowed). Returns an array of <code>Array&lt;{ type, text, href? }&gt;</code> segments. The template renders one <code>&lt;p&gt;</code> per paragraph, with each segment rendered either as plain text or as <code>&lt;a :href target="_blank" rel="noopener noreferrer"&gt;</code>. CSS gives the link a 1px underline with offset (2px on hover) in the ink color.</p>
+</li>
+<li>
+<p><strong>Clickable badukpop.com URL</strong> — falls out of the URL regex above. The single URL in the current explainer (<code>https://badukpop.com</code>) renders as a clickable hyperlink opening in a new tab.</p>
+</li>
+</ol>
+<p><strong>Build note</strong>: I had to rebuild with <code>--no-cache</code> once — looks like Docker BuildKit didn't invalidate the COPY layer despite the source files changing. After the explicit no-cache rebuild, future builds work normally. (Possibly related to the user/linter editing the file with the same mtime as the previous build.)</p>
+<p><strong>Tests</strong>
+- Frontend (vitest): <strong>111/111</strong> unchanged. The existing explainer test (asserts <code>[data-testid="explainer"]</code>'s text contains <code>"demo"</code>) still works since the test relies on <code>text()</code> aggregation, which flattens through the <code>&lt;p&gt;</code> children.
+- E2E (Playwright): <strong>16/16</strong>.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-008.html#msg-2026-06-18T04-58-27-436Z"><div class="index-item-header"><span class="index-item-number">#37</span><time datetime="2026-06-18T04:58:27.436Z" data-timestamp="2026-06-18T04:58:27.436Z">2026-06-18T04:58:27.436Z</time></div><div class="index-item-content"><p>remove the "# screen events, # hourly buckets" under the time series</p></div></a><div class="index-item-stats"><span>7 edit · 5 read · 2 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>All tests pass: <strong>110 frontend + 16 e2e</strong>.</p>
+<p><strong>Changes</strong>
+- <strong>App.vue template</strong>: deleted the <code>&lt;p class="caption"&gt;{{ totalEvents.toLocaleString() }} screen events, {{ screenBuckets.length }} hourly buckets.&lt;/p&gt;</code> element.
+- <strong>App.vue script</strong>: removed the <code>totalEvents</code> computed (it was only used by the caption).
+- <strong>App.vue styles</strong>: deleted the <code>.caption</code> CSS rule.
+- <strong>App.test.ts</strong>: merged the two caption-dependent tests into one (<code>applies a countryAgg filter and narrows the metrics-table player count</code>) that now reads the n-cell of the metrics table — same assertion intent (filter narrows the dataset), grounded in the surviving UI. Frontend test count dropped 111 → 110.
+- <strong>e2e/smoke.spec.ts</strong>: dropped the <code>screen events</code> / <code>hourly buckets</code> regex assertions from the chart-render test (replaced with "metrics-table is visible"), and rewrote <code>filter narrows the dataset</code> to read the metrics-table n-cell instead of the deleted caption. E2E test count unchanged (16).</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-008.html#msg-2026-06-18T05-09-19-079Z"><div class="index-item-header"><span class="index-item-number">#38</span><time datetime="2026-06-18T05:09:19.079Z" data-timestamp="2026-06-18T05:09:19.079Z">2026-06-18T05:09:19.079Z</time></div><div class="index-item-content"><p>do TASK-800</p></div></a><div class="index-item-stats"><span>9 bash · 8 edit · 4 read · 2 write</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>TASK-800 marked <code>[DONE]</code> on disk.</p>
+<p><strong>Summary</strong></p>
+<p><strong>Files added:</strong>
+- <strong><code>Dockerfile.bundled</code></strong> — thin layer on top of the base runtime: <code>FROM ${BASE_IMAGE:-project-an:latest}</code> + <code>COPY data /data</code>. The <code>BASE_IMAGE</code> arg lets you tag-pin the base if you want, but defaults to <code>project-an:latest</code>.
+- <strong><code>Dockerfile.bundled.dockerignore</code></strong> — per-Dockerfile dockerignore (Docker 25+ feature). Uses <code>*</code> then <code>!data</code> / <code>!data/**</code> to keep this build's context tiny (only the data directory is sent, nothing else).</p>
+<p><strong>Makefile additions:</strong>
+- <strong><code>make build-bundled</code></strong> — depends on <code>build</code>, then runs <code>docker build -f Dockerfile.bundled --build-arg BASE_IMAGE=... -t project-an-bundled .</code>
+- <strong><code>make run-bundled</code></strong> — runs the bundled image without the <code>-v ./data:/data</code> mount, opens the browser when ready.
+- <strong><code>make push-bundled</code></strong> — depends on <code>build-bundled</code>, then runs <code>aws ecr get-login-password | docker login</code>, tags the bundled image as <code>043633525143.dkr.ecr.us-east-1.amazonaws.com/project-an:latest</code>, and <code>docker push</code>es it. Override <code>AWS_REGION</code> / <code>ECR_REGISTRY</code> / <code>ECR_REPO</code> / <code>ECR_TAG</code> on the command line to retarget.</p>
+<p><strong>Verified</strong>
+- <code>make build-bundled</code> → produces <code>project-an-bundled:latest</code> (947 MB; +278 MB over the 669 MB base, ≈ the four parquet files at parquet-on-disk size).
+- <code>docker run --rm -p 8007:8000 project-an-bundled</code> (no volume mount) → <code>/api/data</code> lists all four files, <code>/api/data/events-202605-ca.parquet</code> returns 1,263,548 bytes.
+- <code>make build</code> still produces a <code>project-an</code> with <strong>no <code>/data</code> directory</strong> (confirmed via <code>ls /data</code> → "No such file or directory"). Non-bundled e2e still 16/16 green.
+- <code>make help</code> displays both new targets.
+- <code>make -n push-bundled</code> (dry-run) shows the correct ECR login → tag → push sequence with no surprises.</p>
+<p><strong>Not run</strong> (deliberately): the actual <code>make push-bundled</code> — that's a write to a shared registry, so it should be initiated by you when you're ready.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-008.html#msg-2026-06-18T05-28-23-702Z"><div class="index-item-header"><span class="index-item-number">#39</span><time datetime="2026-06-18T05:28:23.702Z" data-timestamp="2026-06-18T05:28:23.702Z">2026-06-18T05:28:23.702Z</time></div><div class="index-item-content"><p>do TASK-810</p></div></a><div class="index-item-stats"><span>4 edit · 4 bash · 1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>TASK-810 marked <code>[DONE]</code> on disk.</p>
+<p><strong>Summary</strong></p>
+<p>Extended <code>make push-bundled</code> to chain the ECS redeploy after the docker push, exactly as specified in TASK-810. The full pipeline now: <code>build</code> → <code>build-bundled</code> → <code>aws ecr get-login-password | docker login</code> → <code>docker tag</code> → <code>docker push</code> → <code>aws ecs update-express-gateway-service</code>.</p>
+<p><strong>Makefile additions:</strong>
+- New variables (overridable on the command line): <code>ECS_SERVICE_ARN</code> defaulting to <code>arn:aws:ecs:us-east-1:043633525143:service/default/project-an</code>, and <code>ECS_CONTAINER_PORT</code> defaulting to <code>8000</code>.
+- The ECS update command runs verbatim from the task: <code>--region us-east-1 --service-arn "..." --primary-container image=$(ECR_REPO):$(ECR_TAG),containerPort=$(ECS_CONTAINER_PORT)</code>.
+- Help text updated: "build-bundled, push to ECR, and redeploy the ECS Express service".</p>
+<p><strong>Not executed</strong> (deliberately): the actual <code>make push-bundled</code> — that combo (registry write + production service rollover) is a real deploy. The dry-run above shows the full command sequence is correct; running it is your call when you're ready.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+
+        <dialog id="search-modal">
+            <div class="search-modal-header">
+                <input type="text" id="modal-search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="modal-search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+                <button id="modal-close-btn" type="button" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+            </div>
+            <div id="search-status"></div>
+            <div id="search-results"></div>
+        </dialog>
+        <script>
+(function() {
+    var totalPages = 8;
+    var searchBox = document.getElementById('search-box');
+    var searchInput = document.getElementById('search-input');
+    var searchBtn = document.getElementById('search-btn');
+    var modal = document.getElementById('search-modal');
+    var modalInput = document.getElementById('modal-search-input');
+    var modalSearchBtn = document.getElementById('modal-search-btn');
+    var modalCloseBtn = document.getElementById('modal-close-btn');
+    var searchStatus = document.getElementById('search-status');
+    var searchResults = document.getElementById('search-results');
+
+    if (!searchBox || !modal) return;
+
+    // Hide search on file:// protocol (doesn't work due to CORS restrictions)
+    if (window.location.protocol === 'file:') return;
+
+    // Show search box (progressive enhancement)
+    searchBox.style.display = 'flex';
+
+    // Gist preview support - detect if we're on gisthost.github.io or gistpreview.github.io
+    var hostname = window.location.hostname;
+    var isGistPreview = hostname === 'gisthost.github.io' || hostname === 'gistpreview.github.io';
+    var gistId = null;
+    var gistOwner = null;
+    var gistInfoLoaded = false;
+
+    if (isGistPreview) {
+        // Extract gist ID from URL query string like ?78a436a8a9e7a2e603738b8193b95410/index.html
+        var queryMatch = window.location.search.match(/^\?([a-f0-9]+)/i);
+        if (queryMatch) {
+            gistId = queryMatch[1];
+        }
+    }
+
+    async function loadGistInfo() {
+        if (!isGistPreview || !gistId || gistInfoLoaded) return;
+        try {
+            var response = await fetch('https://api.github.com/gists/' + gistId);
+            if (response.ok) {
+                var info = await response.json();
+                gistOwner = info.owner.login;
+                gistInfoLoaded = true;
+            }
+        } catch (e) {
+            console.error('Failed to load gist info:', e);
+        }
+    }
+
+    function getPageFetchUrl(pageFile) {
+        if (isGistPreview && gistOwner && gistId) {
+            // Use raw gist URL for fetching content
+            return 'https://gist.githubusercontent.com/' + gistOwner + '/' + gistId + '/raw/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function getPageLinkUrl(pageFile) {
+        if (isGistPreview && gistId) {
+            // Use gistpreview URL format for navigation links
+            return '?' + gistId + '/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function openModal(query) {
+        modalInput.value = query || '';
+        searchResults.innerHTML = '';
+        searchStatus.textContent = '';
+        modal.showModal();
+        modalInput.focus();
+        if (query) {
+            performSearch(query);
+        }
+    }
+
+    function closeModal() {
+        modal.close();
+        // Update URL to remove search fragment, preserving path and query string
+        if (window.location.hash.startsWith('#search=')) {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+    }
+
+    function updateUrlHash(query) {
+        if (query) {
+            // Preserve path and query string when adding hash
+            history.replaceState(null, '', window.location.pathname + window.location.search + '#search=' + encodeURIComponent(query));
+        }
+    }
+
+    function highlightTextNodes(element, searchTerm) {
+        var walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+        var nodesToReplace = [];
+
+        while (walker.nextNode()) {
+            var node = walker.currentNode;
+            if (node.nodeValue.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1) {
+                nodesToReplace.push(node);
+            }
+        }
+
+        nodesToReplace.forEach(function(node) {
+            var text = node.nodeValue;
+            var regex = new RegExp('(' + escapeRegex(searchTerm) + ')', 'gi');
+            var parts = text.split(regex);
+            if (parts.length > 1) {
+                var span = document.createElement('span');
+                parts.forEach(function(part) {
+                    if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                        var mark = document.createElement('mark');
+                        mark.textContent = part;
+                        span.appendChild(mark);
+                    } else {
+                        span.appendChild(document.createTextNode(part));
+                    }
+                });
+                node.parentNode.replaceChild(span, node);
+            }
+        });
+    }
+
+    function fixInternalLinks(element, pageFile) {
+        // Update all internal anchor links to include the page file
+        var links = element.querySelectorAll('a[href^="#"]');
+        links.forEach(function(link) {
+            var href = link.getAttribute('href');
+            link.setAttribute('href', pageFile + href);
+        });
+    }
+
+    function processPage(pageFile, html, query) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, 'text/html');
+        var resultsFromPage = 0;
+
+        // Find all message blocks
+        var messages = doc.querySelectorAll('.message');
+        messages.forEach(function(msg) {
+            var text = msg.textContent || '';
+            if (text.toLowerCase().indexOf(query.toLowerCase()) !== -1) {
+                resultsFromPage++;
+
+                // Get the message ID for linking
+                var msgId = msg.id || '';
+                var pageLinkUrl = getPageLinkUrl(pageFile);
+                var link = pageLinkUrl + (msgId ? '#' + msgId : '');
+
+                // Clone the message HTML and highlight matches
+                var clone = msg.cloneNode(true);
+                // Fix internal links to include the page file
+                fixInternalLinks(clone, pageLinkUrl);
+                highlightTextNodes(clone, query);
+
+                var resultDiv = document.createElement('div');
+                resultDiv.className = 'search-result';
+                resultDiv.innerHTML = '<a href="' + link + '">' +
+                    '<div class="search-result-page">' + escapeHtml(pageFile) + '</div>' +
+                    '<div class="search-result-content">' + clone.innerHTML + '</div>' +
+                    '</a>';
+                searchResults.appendChild(resultDiv);
+            }
+        });
+
+        return resultsFromPage;
+    }
+
+    async function performSearch(query) {
+        if (!query.trim()) {
+            searchStatus.textContent = 'Enter a search term';
+            return;
+        }
+
+        updateUrlHash(query);
+        searchResults.innerHTML = '';
+        searchStatus.textContent = 'Searching...';
+
+        // Load gist info if on gistpreview (needed for constructing URLs)
+        if (isGistPreview && !gistInfoLoaded) {
+            searchStatus.textContent = 'Loading gist info...';
+            await loadGistInfo();
+            if (!gistOwner) {
+                searchStatus.textContent = 'Failed to load gist info. Search unavailable.';
+                return;
+            }
+        }
+
+        var resultsFound = 0;
+        var pagesSearched = 0;
+
+        // Build list of pages to fetch
+        var pagesToFetch = [];
+        for (var i = 1; i <= totalPages; i++) {
+            pagesToFetch.push('page-' + String(i).padStart(3, '0') + '.html');
+        }
+
+        searchStatus.textContent = 'Searching...';
+
+        // Process pages in batches of 3, but show results immediately as each completes
+        var batchSize = 3;
+        for (var i = 0; i < pagesToFetch.length; i += batchSize) {
+            var batch = pagesToFetch.slice(i, i + batchSize);
+
+            // Create promises that process results immediately when each fetch completes
+            var promises = batch.map(function(pageFile) {
+                return fetch(getPageFetchUrl(pageFile))
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Failed to fetch');
+                        return response.text();
+                    })
+                    .then(function(html) {
+                        // Process and display results immediately
+                        var count = processPage(pageFile, html, query);
+                        resultsFound += count;
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    })
+                    .catch(function() {
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    });
+            });
+
+            // Wait for this batch to complete before starting the next
+            await Promise.all(promises);
+        }
+
+        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + totalPages + ' pages';
+    }
+
+    // Event listeners
+    searchBtn.addEventListener('click', function() {
+        openModal(searchInput.value);
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            openModal(searchInput.value);
+        }
+    });
+
+    modalSearchBtn.addEventListener('click', function() {
+        performSearch(modalInput.value);
+    });
+
+    modalInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            performSearch(modalInput.value);
+        }
+    });
+
+    modalCloseBtn.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Check for #search= in URL on page load
+    if (window.location.hash.startsWith('#search=')) {
+        var query = decodeURIComponent(window.location.hash.substring(8));
+        if (query) {
+            searchInput.value = query;
+            openModal(query);
+        }
+    }
+})();
+        </script>
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>
