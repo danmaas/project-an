@@ -41,7 +41,7 @@ This file tracks the state of tasks that are TODO / INPROGRESS / DONE. Please ke
     - Create a new make target that constructs a fully self-contained container that bakes  the contents of the local data/ directory into the container's /data, instead of expecting it to be mounted at runtime
     - Create another new make target, dependent on the previous one, that then pushes this "baked" container to the ECR registry at `043633525143.dkr.ecr.us-east-1.amazonaws.com/project-an`. Assume AWS credentials exist in the environment such that `aws ecr get-login-password` will work.
 
-- TASK-810 [TODO]: Redeploy ECS service after push
+- TASK-810 [DONE]: Redeploy ECS service after push
     - For `make push-bundled`, also run this command to redeploy the new image to a pre-existing ECS Express mode service:
 ```
 aws ecs update-express-gateway-service \

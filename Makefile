@@ -7,19 +7,22 @@ IMAGE_NAME         ?= project-an
 BUNDLED_IMAGE_NAME ?= project-an-bundled
 HOST_PORT          ?= 8000
 
-# ECR target for `make push-bundled`. Defaults match the registry/repo named
-# in TASK-800; override on the command line to publish elsewhere.
-AWS_REGION   ?= us-east-1
-ECR_REGISTRY ?= 043633525143.dkr.ecr.us-east-1.amazonaws.com
-ECR_REPO     ?= $(ECR_REGISTRY)/project-an
-ECR_TAG      ?= latest
+# Deployment target for `make push-bundled`. Defaults match the registry/repo
+# and ECS Express service named in TASK-800 / TASK-810; override on the
+# command line to publish/deploy elsewhere.
+AWS_REGION      ?= us-east-1
+ECR_REGISTRY    ?= 043633525143.dkr.ecr.us-east-1.amazonaws.com
+ECR_REPO        ?= $(ECR_REGISTRY)/project-an
+ECR_TAG         ?= latest
+ECS_SERVICE_ARN ?= arn:aws:ecs:us-east-1:043633525143:service/default/project-an
+ECS_CONTAINER_PORT ?= 8000
 
 help:
 	@echo "Common targets:"
 	@echo "  make install         install all dev deps (backend + frontend + e2e)"
 	@echo "  make build           build the Docker image ($(IMAGE_NAME))"
 	@echo "  make build-bundled   build a fully self-contained image with data/ baked in ($(BUNDLED_IMAGE_NAME))"
-	@echo "  make push-bundled    build-bundled, then push it to ECR as $(ECR_REPO):$(ECR_TAG)"
+	@echo "  make push-bundled    build-bundled, push to ECR ($(ECR_REPO):$(ECR_TAG)), and redeploy the ECS Express service"
 	@echo "  make run             run the container, mounting ./data and exposing :$(HOST_PORT) (opens browser)"
 	@echo "  make run-bundled     run the self-contained image (no data mount), exposing :$(HOST_PORT) (opens browser)"
 	@echo "  make test            run all tests (backend, frontend, e2e)"
@@ -52,13 +55,18 @@ build-bundled: build
 	docker build -f Dockerfile.bundled --build-arg BASE_IMAGE=$(IMAGE_NAME):latest -t $(BUNDLED_IMAGE_NAME) .
 
 # Authenticates against AWS ECR, tags the bundled image for the target repo,
-# and pushes it. Assumes AWS credentials are present in the environment such
-# that `aws ecr get-login-password` works (env vars / SSO / instance role).
+# pushes it, then triggers a rolling redeploy on the pre-existing ECS Express
+# service so it picks up the new image. Assumes AWS credentials are present
+# in the environment.
 push-bundled: build-bundled
 	aws ecr get-login-password --region $(AWS_REGION) \
 	  | docker login --username AWS --password-stdin $(ECR_REGISTRY)
 	docker tag $(BUNDLED_IMAGE_NAME):latest $(ECR_REPO):$(ECR_TAG)
 	docker push $(ECR_REPO):$(ECR_TAG)
+	aws ecs update-express-gateway-service \
+	  --region $(AWS_REGION) \
+	  --service-arn "$(ECS_SERVICE_ARN)" \
+	  --primary-container image=$(ECR_REPO):$(ECR_TAG),containerPort=$(ECS_CONTAINER_PORT)
 
 run: build
 	@( \
