@@ -84,3 +84,13 @@ The full dataset in this demo is near the limit we can reasonably handle with cl
 ## Advanced Analysis
 
 The activity chart and retention/monetization metrics only scratch the surface of what one can learn from this dataset. A useful next step would be to implement conversion funnel analysis: given a sequence of key events -- for example, "complete tutorial" to "start first puzzle" to "activate paid subscription" -- check the rate at which users successfully jump from one step to the next. This could be visualized as numeric conversion rates or a graphical Sankey chart. This way, we can identify the worst "churn points" where users stop progressing, and inspire new variations of the game design aimed at fixing these leaks.
+
+# Time taken
+
+Total approximately 7 hours.
+  - 1h: AGENTS/TODO setup
+  - 1h: Complete initial TASKS
+  - 1h: Add TASKS for additional features
+  - 2h: Optimize performance & polish UI
+  - 1h: Deploy to the cloud
+  - 1h: Write README & record demo
